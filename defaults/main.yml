@@ -23,9 +23,10 @@ misskey_uid: ""
 misskey_gid: ""
 
 # The hostname at which Misskey is served.
+# Once the instance has started, changing the value will break the instance!
 misskey_hostname: ""
 
-# Specify URI scheme for misskey_environment_variable_app_url.
+# Specify URI scheme
 misskey_scheme: https
 
 # The path at which Misskey is exposed.
@@ -176,88 +177,33 @@ misskey_systemd_wanted_services_list_default: []
 misskey_systemd_wanted_services_list_auto: []
 misskey_systemd_wanted_services_list_custom: []
 
-# env.j2: Specify application's URL
-misskey_environment_variable_app_url: "{{ misskey_scheme }}://{{ misskey_hostname }}"
-
-# env.j2: Specify application's secret (minimum of 32 characters)
-# Generate a strong secret. You can create one with a command like `pwgen -s 64 1`.
-misskey_environment_variable_app_secret: YOUR_SECRET_KEY_HERE
-
-# env.j2: Specify expiration time for JSON Web Tokens (default: 30 days)
-misskey_environment_variable_jwt_token_expires_in: 30d
-
-# env.j2: Specify configuration for Postgres database server
+# Specify configuration for Postgres database server
 misskey_database_hostname: ""
 misskey_database_port: 5432
-misskey_database_username: "postgres"
+misskey_database_username: misskey
 misskey_database_password: ""
-misskey_database_name: "misskey"
-misskey_environment_variable_database_url: "postgres://{{ misskey_database_username }}:{{ misskey_database_password }}@{{ misskey_database_hostname }}:{{ misskey_database_port }}/{{ misskey_database_name }}?schema=public"
+misskey_database_name: misskey
+misskey_database_ssl: false
+misskey_database_replications: false
 
-# env.j2: Specify configuration for Redis, KeyDB, or Valkey server
-misskey_redis_username: ""
-misskey_redis_password: ""
+# Specify configuration for Redis, KeyDB, or Valkey server
 misskey_redis_hostname: ""
 misskey_redis_port: 6379
-misskey_redis_dbnumber: ""
-misskey_environment_variable_redis_url: "redis://{{ misskey_redis_username }}:{{ misskey_redis_password }}@{{ misskey_redis_hostname }}:{{ misskey_redis_port }}/{{ misskey_redis_dbnumber }}"
 
-# env.j2: Specify the storage backend option
-# Valid values: local, s3
-misskey_environment_variable_storage_driver: local
+# Specify the provider for fulltext search configuration
+misskey_config_fulltext_search_provider: sqlLike
 
-# env.j2: Specify S3 driver configuration
-# Set a S3 access key ID
-misskey_environment_variable_aws_s3_access_key_id: ""
-# Set a S3 secret access key ID
-misskey_environment_variable_aws_s3_secret_access_key: ""
-# Set the region where your S3 bucket is located
-misskey_environment_variable_aws_s3_region: ""
-# Set a S3 bucket name to use
-misskey_environment_variable_aws_s3_bucket: ""
-# The endpoint URL for your S3 service (optional; set if using a S3 compatible storage like Wasabi and Storj)
-misskey_environment_variable_aws_s3_endpoint: ""
-# Control whether to force path style URLs (https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/Config.html#s3ForcePathStyle-property) for S3 objects
-misskey_environment_variable_aws_s3_force_path_style: false
+# Specify size limits (bytes) of files to be uploaded or downloaded
+misskey_config_max_file_size: 262144000
 
-# env.j2: Specify the maximum uploaded file size (default: 50mb)
-misskey_environment_variable_file_upload_size_limit: "50mb"
+# Specify the ID generation method
+# Once the instance has been started, do not change the ID setting!
+misskey_config_id: aidx
 
-# env.j2: Control whether mailer is enabled
-misskey_mailer_enabled: false
-
-# env.j2: Specify the mailer's configuration
-# Valid values: smtp, postmark
-misskey_environment_variable_mail_driver: smtp
-# Set the email address that emails will be sent from
-misskey_environment_variable_mail_from_address: ''
-# Set the name that emails will be sent from
-misskey_environment_variable_mail_from_name: misskey
-
-# env.j2: Specify SMTP driver configuration
-# Set the hostname of the SMTP server
-misskey_environment_variable_smtp_host: ''
-# Set the port to use for the SMTP server
-misskey_environment_variable_smtp_port: 587
-# Set the username for the SMTP server
-misskey_environment_variable_smtp_username: ""
-# Set the password for the SMTP server
-misskey_environment_variable_smtp_password: ""
-# Control whether TLS is used when connecting to the server
-misskey_environment_variable_smtp_secure: false
-# Control whether SSL errors are ignored
-misskey_environment_variable_smtp_ignoretls: false
-
-# env.j2: Specify Postmark driver configuration
-misskey_environment_variable_postmark_token: ""
-
-# env.j2: Specify custom Draw.io server configuration
-# Example: https://embed.diagrams.net
-misskey_environment_variable_drawio_url: ""
-
-# env.j2: Control whether telemetry is disabled
-misskey_environment_variable_disable_telemetry: false
+# Additional configurations.
+# See: https://github.com/misskey-dev/misskey/blob/master/.config/docker_example.yml
+misskey_config_additional_configurations: ""
 
 # Additional environment variables.
-# See: https://misskey.com/docs/self-hosting/environment-variables
+# See: https://github.com/misskey-dev/misskey/blob/master/.config/docker_example.env
 misskey_environment_variables_additional_variables: ""

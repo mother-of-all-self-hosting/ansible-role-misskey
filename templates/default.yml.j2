@@ -7,7 +7,7 @@
 
 # Final accessible URL seen by a user.
 # You can set url from an environment variable instead.
-url: https://example.tld/
+url: "{{ misskey_scheme }}://{{ misskey_hostname }}"
 
 # ONCE YOU HAVE STARTED THE INSTANCE, DO NOT CHANGE THE
 # URL SETTINGS AFTER THAT!
@@ -29,32 +29,32 @@ url: https://example.tld/
 #   because tokens may be transferred in GET requests.
 
 # The port that your Misskey server should listen on.
-port: 3000
+port: {{ misskey_container_http_port }}
 
 #   ┌──────────────────────────┐
 #───┘ PostgreSQL configuration └────────────────────────────────
 
 db:
-  host: db
-  port: 5432
+  host: "{{ misskey_database_hostname }}"
+  port: {{ misskey_database_port }}
 
   # Database name
   # You can set db from an environment variable instead.
-  db: misskey
+  db: "{{ misskey_database_name }}"
 
   # Auth
   # You can set user and pass from environment variables instead.
-  user: example-misskey-user
-  pass: example-misskey-pass
+  user: "{{ misskey_database_username }}"
+  pass: "{{ misskey_database_password }}"
 
   # Whether disable Caching queries
   #disableCache: true
 
   # Extra Connection options
-  #extra:
-  #  ssl: true
+  extra:
+    ssl: {{ misskey_database_ssl | to_json }}
 
-dbReplications: false
+dbReplications: {{ misskey_database_replications | to_json }}
 
 # You can configure any number of replicas here
 #dbSlaves:
@@ -75,8 +75,8 @@ dbReplications: false
 #───┘ Redis configuration └─────────────────────────────────────
 
 redis:
-  host: redis
-  port: 6379
+  host: "{{ misskey_redis_hostname }}"
+  port: {{ misskey_redis_port }}
   #family: 0  # 0=Both, 4=IPv4, 6=IPv6
   #pass: example-pass
   #prefix: example-prefix
@@ -131,7 +131,7 @@ fulltextSearch:
   # - meilisearch
   #   Use Meilisearch.
   #   You need to install Meilisearch and configure.
-  provider: sqlLike
+  provider: "{{ misskey_config_fulltext_search_provider }}"
 
 # For Meilisearch settings.
 # If you select "meilisearch" for "fulltextSearch.provider", it must be set.
@@ -163,7 +163,7 @@ fulltextSearch:
 # ONCE YOU HAVE STARTED THE INSTANCE, DO NOT CHANGE THE
 # ID SETTINGS AFTER THAT!
 
-id: 'aidx'
+id: '{{ misskey_config_id }}'
 
 #   ┌────────────────┐
 #───┘ Error tracking └──────────────────────────────────────────
@@ -235,7 +235,7 @@ proxyBypassHosts:
 #]
 
 # Upload or download file size limits (bytes)
-#maxFileSize: 262144000
+maxFileSize: {{ misskey_config_max_file_size }}
 
 # Log settings
 # logging:
@@ -246,3 +246,5 @@ proxyBypassHosts:
 #     # Disable query truncation. If set to true, the full text of the query will be output to the log.
 #     # default: false
 #     disableQueryTruncation: false
+
+{{ misskey_config_additional_configurations }}

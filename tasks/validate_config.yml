@@ -29,35 +29,7 @@
     - misskey_container_network
     - misskey_database_hostname
     - misskey_database_password
-    - misskey_environment_variable_redis_url
-
-- name: Fail if Misskey storage drver option is invalid
-  ansible.builtin.fail:
-    msg: >-
-      misskey_environment_variable_storage_driver must be 'local' or 's3'
-  when: "misskey_environment_variable_storage_driver not in ['local', 's3']"
-
-- name: Fail if Misskey mail driver option is invalid
-  ansible.builtin.fail:
-    msg: >-
-      misskey_environment_variable_mail_driver must be 'smtp' or 'postmark'
-  when: "misskey_environment_variable_mail_driver not in ['smtp', 'postmark']"
-
-- name: Fail if mailer setting is missing
-  ansible.builtin.fail:
-    msg: >-
-      You need to define a required configuration setting (`{{ item }}`) to correctly set up email.
-  when: "misskey_mailer_enabled and lookup('vars', item, default='') | string | length == 0"
-  with_items:
-    - misskey_environment_variable_mail_from_address
-
-- name: Fail if SMTP setting is missing (and SMTP is enabled by setting host)
-  ansible.builtin.fail:
-    msg: >-
-      You need to define a required configuration setting (`{{ item }}`) to correctly set up email via SMTP.
-  when: "misskey_mailer_enabled | bool and misskey_environment_variable_mail_driver == 'smtp' and lookup('vars', item, default='') | string | length == 0"
-  with_items:
-    - misskey_environment_variable_smtp_host
+    - misskey_redis_hostname
 
 - name: Run if Traefik is enabled
   when: misskey_container_labels_traefik_enabled | bool
