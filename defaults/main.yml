@@ -40,12 +40,7 @@ misskey_container_image_registry_prefix: "{{ misskey_container_image_registry_pr
 misskey_container_image_registry_prefix_upstream: "{{ misskey_container_image_registry_prefix_upstream_default }}"
 misskey_container_image_registry_prefix_upstream_default: docker.io/
 misskey_container_image_force_pull: "{{ misskey_container_image.endswith(':latest') }}"
-
-misskey_container_image_self_build: false
-misskey_container_image_self_build_name: "misskey/misskey:{{ misskey_container_image_self_build_repo_version }}"
-misskey_container_image_self_build_repo: "https://github.com/misskey-dev/misskey.git"
-misskey_container_image_self_build_repo_version: "{{ misskey_version if misskey_version != 'latest' else 'main' }}"
-misskey_container_image_self_build_src_files_path: "{{ misskey_base_path }}/docker-src"
+# TODO: add tasks to self-build the image
 
 # Controls whether the container exposes its HTTP port (tcp/80 in the container).
 #

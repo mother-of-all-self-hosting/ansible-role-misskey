@@ -32,11 +32,6 @@
         - env
         - labels
 
-    - name: Ensure Misskey image source files path does not exist
-      ansible.builtin.file:
-        path: "{{ misskey_container_image_self_build_src_files_path }}"
-        state: absent
-
     - name: Ensure Misskey local data path does not exist if empty
       ansible.builtin.command:
         cmd: "rmdir {{ misskey_data_path }}"
