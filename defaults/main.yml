@@ -13,6 +13,7 @@ misskey_enabled: true
 
 misskey_identifier: misskey
 misskey_base_path: "/{{ misskey_identifier }}"
+misskey_config_path: "{{ misskey_base_path }}/config"
 misskey_data_path: "{{ misskey_base_path }}/data"
 
 # renovate: datasource=docker depName=misskey/misskey

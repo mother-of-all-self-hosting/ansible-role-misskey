@@ -32,6 +32,20 @@
         - env
         - labels
 
+    - name: Ensure Misskey config file does not exist
+      ansible.builtin.file:
+        path: "{{ misskey_config_path }}/{{ item }}"
+        state: absent
+      with_items:
+        - default.yml
+
+    - name: Ensure Misskey local config path does not exist if empty
+      ansible.builtin.command:
+        cmd: "rmdir {{ misskey_config_path }}"
+      register: misskey_config_path_deletion_result
+      changed_when: misskey_config_path_deletion_result.rc == 0
+      failed_when: false
+
     - name: Ensure Misskey local data path does not exist if empty
       ansible.builtin.command:
         cmd: "rmdir {{ misskey_data_path }}"
@@ -60,6 +74,24 @@
           {{ misskey_container_network }}
       register: network_deletion_result
       changed_when: misskey_container_network in network_deletion_result.stdout
+
+- name: Check existence of Misskey local config path
+  ansible.builtin.stat:
+    path: "{{ misskey_config_path }}"
+  register: misskey_config_path_stat
+
+# We just want to notify the user. Deleting config is too destructive.
+- name: Notify if Misskey local config remains
+  when: misskey_config_path_stat.stat.exists | bool
+  ansible.builtin.set_fact:
+    devture_playbook_runtime_messages_list: |
+      {{
+        devture_playbook_runtime_messages_list | default([])
+        +
+        [
+          "Note: As the local Misskey instance has been removed, some old config remains in `" + misskey_config_path + "`. Feel free to delete it."
+        ]
+      }}
 
 - name: Check existence of Misskey local data path
   ansible.builtin.stat:

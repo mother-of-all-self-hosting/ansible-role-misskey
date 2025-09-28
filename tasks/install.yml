@@ -13,6 +13,7 @@
     group: "{{ misskey_gid }}"
   with_items:
     - "{{ misskey_base_path }}"
+    - "{{ misskey_config_path }}"
     - "{{ misskey_data_path }}"
 
 - name: Ensure Misskey support files installed
@@ -25,6 +26,16 @@
   with_items:
     - env
     - labels
+
+- name: Ensure Misskey config file installed
+  ansible.builtin.template:
+    src: "{{ role_path }}/templates/{{ item }}.j2"
+    dest: "{{ misskey_config_path }}/{{ item }}"
+    mode: "0640"
+    owner: "{{ misskey_uid }}"
+    group: "{{ misskey_gid }}"
+  with_items:
+    - default.yml
 
 - name: Ensure Misskey container image is pulled via community.docker.docker_image
   when: devture_systemd_docker_base_container_image_pull_method == 'ansible-module'
