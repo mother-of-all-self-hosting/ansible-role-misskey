@@ -7,119 +7,119 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-# Project source code URL: https://github.com/docmost/docmost
+# Project source code URL: https://github.com/misskey/misskey
 
-docmost_enabled: true
+misskey_enabled: true
 
-docmost_identifier: docmost
-docmost_base_path: "/{{ docmost_identifier }}"
-docmost_data_path: "{{ docmost_base_path }}/data"
+misskey_identifier: misskey
+misskey_base_path: "/{{ misskey_identifier }}"
+misskey_data_path: "{{ misskey_base_path }}/data"
 
-# renovate: datasource=docker depName=docmost/docmost versioning=semver
-docmost_version: 0.23.2
+# renovate: datasource=docker depName=misskey/misskey versioning=semver
+misskey_version: 0.23.2
 
-docmost_uid: ""
-docmost_gid: ""
+misskey_uid: ""
+misskey_gid: ""
 
-# The hostname at which Docmost is served.
-docmost_hostname: ""
+# The hostname at which Misskey is served.
+misskey_hostname: ""
 
-# Specify URI scheme for docmost_environment_variable_app_url.
-docmost_scheme: https
+# Specify URI scheme for misskey_environment_variable_app_url.
+misskey_scheme: https
 
-# The path at which Docmost is exposed.
-# This value must either be `/` or not end with a slash (e.g. `/docmost`).
+# The path at which Misskey is exposed.
+# This value must either be `/` or not end with a slash (e.g. `/misskey`).
 #
-# Hosting Docmost under a subpath does not seem to be possible due to Docmost's
+# Hosting Misskey under a subpath does not seem to be possible due to Misskey's
 # technical limitations.
-docmost_path_prefix: /
+misskey_path_prefix: /
 
-docmost_container_image: "{{ docmost_container_image_registry_prefix }}docmost/docmost:{{ docmost_container_image_tag }}"
-docmost_container_image_tag: "{{ docmost_version }}"
-docmost_container_image_registry_prefix: "{{ docmost_container_image_registry_prefix_upstream }}"
-docmost_container_image_registry_prefix_upstream: "{{ docmost_container_image_registry_prefix_upstream_default }}"
-docmost_container_image_registry_prefix_upstream_default: docker.io/
-docmost_container_image_force_pull: "{{ docmost_container_image.endswith(':latest') }}"
+misskey_container_image: "{{ misskey_container_image_registry_prefix }}misskey/misskey:{{ misskey_container_image_tag }}"
+misskey_container_image_tag: "{{ misskey_version }}"
+misskey_container_image_registry_prefix: "{{ misskey_container_image_registry_prefix_upstream }}"
+misskey_container_image_registry_prefix_upstream: "{{ misskey_container_image_registry_prefix_upstream_default }}"
+misskey_container_image_registry_prefix_upstream_default: docker.io/
+misskey_container_image_force_pull: "{{ misskey_container_image.endswith(':latest') }}"
 
-docmost_container_image_self_build: false
-docmost_container_image_self_build_name: "docmost/docmost:{{ docmost_container_image_self_build_repo_version }}"
-docmost_container_image_self_build_repo: "https://github.com/docmost/docmost.git"
-docmost_container_image_self_build_repo_version: "{{ 'v' + docmost_version if docmost_version != 'latest' else 'main' }}"
-docmost_container_image_self_build_src_files_path: "{{ docmost_base_path }}/docker-src"
+misskey_container_image_self_build: false
+misskey_container_image_self_build_name: "misskey/misskey:{{ misskey_container_image_self_build_repo_version }}"
+misskey_container_image_self_build_repo: "https://github.com/misskey/misskey.git"
+misskey_container_image_self_build_repo_version: "{{ 'v' + misskey_version if misskey_version != 'latest' else 'main' }}"
+misskey_container_image_self_build_src_files_path: "{{ misskey_base_path }}/docker-src"
 
 # Controls whether the container exposes its HTTP port (tcp/80 in the container).
 #
 # Takes an "<ip>:<port>" or "<port>" value (e.g. "127.0.0.1:2586"), or empty string to not expose.
-docmost_container_http_host_bind_port: ""
+misskey_container_http_host_bind_port: ""
 
 # The base container network. It will be auto-created by this role if it doesn't exist already.
-docmost_container_network: "{{ docmost_identifier }}"
+misskey_container_network: "{{ misskey_identifier }}"
 
 # The port number in the container
-docmost_container_http_port: 3000
+misskey_container_http_port: 3000
 
 # A list of additional container networks that the container would be connected to.
 # The role does not create these networks, so make sure they already exist.
 # Use this to expose this container to another reverse proxy, which runs in a different container network.
-docmost_container_additional_networks: "{{ docmost_container_additional_networks_auto + docmost_container_additional_networks_custom }}"
-docmost_container_additional_networks_auto: []
-docmost_container_additional_networks_custom: []
+misskey_container_additional_networks: "{{ misskey_container_additional_networks_auto + misskey_container_additional_networks_custom }}"
+misskey_container_additional_networks_auto: []
+misskey_container_additional_networks_custom: []
 
 # A list of additional "volumes" to mount in the container.
 # This list gets populated dynamically at runtime. You can provide a different default value,
 # if you wish to mount your own files into the container.
 # Contains definition objects like this: `{"type": "bind", "src": "/outside", "dst": "/inside", "options": "readonly"}.
 # See the `--mount` documentation for the `docker run` command.
-docmost_container_additional_volumes: "{{ docmost_container_additional_volumes_auto + docmost_container_additional_volumes_custom }}"
-docmost_container_additional_volumes_auto: []
-docmost_container_additional_volumes_custom: []
+misskey_container_additional_volumes: "{{ misskey_container_additional_volumes_auto + misskey_container_additional_volumes_custom }}"
+misskey_container_additional_volumes_auto: []
+misskey_container_additional_volumes_custom: []
 
-# docmost_container_labels_traefik_enabled controls whether labels to assist a Traefik reverse-proxy will be attached to the container.
+# misskey_container_labels_traefik_enabled controls whether labels to assist a Traefik reverse-proxy will be attached to the container.
 # See `../templates/labels.j2` for details.
 #
-# To inject your own other container labels, see `docmost_container_labels_additional_labels`.
-docmost_container_labels_traefik_enabled: true
-docmost_container_labels_traefik_docker_network: "{{ docmost_container_network }}"
-docmost_container_labels_traefik_hostname: "{{ docmost_hostname }}"
-# The path prefix must either be `/` or not end with a slash (e.g. `/docmost`).
-docmost_container_labels_traefik_path_prefix: "{{ docmost_path_prefix }}"
-docmost_container_labels_traefik_rule: "Host(`{{ docmost_container_labels_traefik_hostname }}`){% if docmost_container_labels_traefik_path_prefix != '/' %} && PathPrefix(`{{ docmost_container_labels_traefik_path_prefix }}`){% endif %}"
-docmost_container_labels_traefik_priority: 0
-docmost_container_labels_traefik_entrypoints: web-secure
-docmost_container_labels_traefik_tls: "{{ docmost_container_labels_traefik_entrypoints != 'web' }}"
-docmost_container_labels_traefik_tls_certResolver: default  # noqa var-naming
+# To inject your own other container labels, see `misskey_container_labels_additional_labels`.
+misskey_container_labels_traefik_enabled: true
+misskey_container_labels_traefik_docker_network: "{{ misskey_container_network }}"
+misskey_container_labels_traefik_hostname: "{{ misskey_hostname }}"
+# The path prefix must either be `/` or not end with a slash (e.g. `/misskey`).
+misskey_container_labels_traefik_path_prefix: "{{ misskey_path_prefix }}"
+misskey_container_labels_traefik_rule: "Host(`{{ misskey_container_labels_traefik_hostname }}`){% if misskey_container_labels_traefik_path_prefix != '/' %} && PathPrefix(`{{ misskey_container_labels_traefik_path_prefix }}`){% endif %}"
+misskey_container_labels_traefik_priority: 0
+misskey_container_labels_traefik_entrypoints: web-secure
+misskey_container_labels_traefik_tls: "{{ misskey_container_labels_traefik_entrypoints != 'web' }}"
+misskey_container_labels_traefik_tls_certResolver: default  # noqa var-naming
 
 # Controls which additional headers to attach to all HTTP requests.
-# To add your own custom request headers, use `docmost_container_labels_traefik_additional_request_headers_custom`
-docmost_container_labels_traefik_additional_request_headers: "{{ docmost_container_labels_traefik_additional_request_headers_auto | combine(docmost_container_labels_traefik_additional_request_headers_custom) }}"
-docmost_container_labels_traefik_additional_request_headers_auto: {}
-docmost_container_labels_traefik_additional_request_headers_custom: {}
+# To add your own custom request headers, use `misskey_container_labels_traefik_additional_request_headers_custom`
+misskey_container_labels_traefik_additional_request_headers: "{{ misskey_container_labels_traefik_additional_request_headers_auto | combine(misskey_container_labels_traefik_additional_request_headers_custom) }}"
+misskey_container_labels_traefik_additional_request_headers_auto: {}
+misskey_container_labels_traefik_additional_request_headers_custom: {}
 
 # Controls which additional headers to attach to all HTTP responses.
-# To add your own custom response headers, use `docmost_container_labels_traefik_additional_response_headers_custom`
-docmost_container_labels_traefik_additional_response_headers: "{{ docmost_container_labels_traefik_additional_response_headers_auto | combine(docmost_container_labels_traefik_additional_response_headers_custom) }}"
-docmost_container_labels_traefik_additional_response_headers_auto: |
+# To add your own custom response headers, use `misskey_container_labels_traefik_additional_response_headers_custom`
+misskey_container_labels_traefik_additional_response_headers: "{{ misskey_container_labels_traefik_additional_response_headers_auto | combine(misskey_container_labels_traefik_additional_response_headers_custom) }}"
+misskey_container_labels_traefik_additional_response_headers_auto: |
   {{
     {}
-    | combine ({'X-XSS-Protection': docmost_http_header_xss_protection} if docmost_http_header_xss_protection else {})
-    | combine ({'X-Content-Type-Options': docmost_http_header_content_type_options} if docmost_http_header_content_type_options else {})
-    | combine ({'Content-Security-Policy': docmost_http_header_content_security_policy} if docmost_http_header_content_security_policy else {})
-    | combine ({'Permissions-Policy': docmost_http_header_permissions_policy} if docmost_http_header_permissions_policy else {})
-    | combine ({'Strict-Transport-Security': docmost_http_header_strict_transport_security} if docmost_http_header_strict_transport_security and docmost_container_labels_traefik_tls else {})
+    | combine ({'X-XSS-Protection': misskey_http_header_xss_protection} if misskey_http_header_xss_protection else {})
+    | combine ({'X-Content-Type-Options': misskey_http_header_content_type_options} if misskey_http_header_content_type_options else {})
+    | combine ({'Content-Security-Policy': misskey_http_header_content_security_policy} if misskey_http_header_content_security_policy else {})
+    | combine ({'Permissions-Policy': misskey_http_header_permissions_policy} if misskey_http_header_permissions_policy else {})
+    | combine ({'Strict-Transport-Security': misskey_http_header_strict_transport_security} if misskey_http_header_strict_transport_security and misskey_container_labels_traefik_tls else {})
   }}
-docmost_container_labels_traefik_additional_response_headers_custom: {}
+misskey_container_labels_traefik_additional_response_headers_custom: {}
 
-# docmost_container_labels_additional_labels contains a multiline string with additional labels to add to the container label file.
+# misskey_container_labels_additional_labels contains a multiline string with additional labels to add to the container label file.
 # See `../templates/labels.j2` for details.
 #
 # Example:
-# docmost_container_labels_additional_labels: |
+# misskey_container_labels_additional_labels: |
 #   my.label=1
 #   another.label="here"
-docmost_container_labels_additional_labels: ""
+misskey_container_labels_additional_labels: ""
 
 # A list of extra arguments to pass to the container (`docker run` command)
-docmost_container_extra_arguments: []
+misskey_container_extra_arguments: []
 
 # Specifies the value of the `X-XSS-Protection` header
 # Stops pages from loading when they detect reflected cross-site scripting (XSS) attacks.
@@ -127,23 +127,23 @@ docmost_container_extra_arguments: []
 # Learn more about it is here:
 # - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection
 # - https://portswigger.net/web-security/cross-site-scripting/reflected
-docmost_http_header_xss_protection: "1; mode=block"
+misskey_http_header_xss_protection: "1; mode=block"
 
 # Specifies the value of the `X-Content-Type-Options` header.
 # See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options
-docmost_http_header_content_type_options: nosniff
+misskey_http_header_content_type_options: nosniff
 
 # Specifies the value of the `Content-Security-Policy` header.
 # See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
-docmost_http_header_content_security_policy: frame-ancestors 'self'
+misskey_http_header_content_security_policy: frame-ancestors 'self'
 
 # Specifies the value of the `Permissions-Policy` header.
 # See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy
-docmost_http_header_permissions_policy: "{{ 'interest-cohort=()' if docmost_floc_optout_enabled else '' }}"
+misskey_http_header_permissions_policy: "{{ 'interest-cohort=()' if misskey_floc_optout_enabled else '' }}"
 
 # Specifies the value of the `Strict-Transport-Security` header.
 # See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security
-docmost_http_header_strict_transport_security: "max-age=31536000; includeSubDomains{{ '; preload' if docmost_hsts_preload_enabled else '' }}"
+misskey_http_header_strict_transport_security: "max-age=31536000; includeSubDomains{{ '; preload' if misskey_hsts_preload_enabled else '' }}"
 
 # Controls whether to send a "Permissions-Policy interest-cohort=();" header along with all responses
 #
@@ -153,8 +153,8 @@ docmost_http_header_strict_transport_security: "max-age=31536000; includeSubDoma
 # - https://amifloced.org/
 #
 # Of course, a better solution is to just stop using browsers (like Chrome), which participate in such tracking practices.
-# See: `docmost_http_header_permissions_policy`
-docmost_floc_optout_enabled: true
+# See: `misskey_http_header_permissions_policy`
+misskey_floc_optout_enabled: true
 
 # Controls if HSTS preloading is enabled
 #
@@ -165,103 +165,103 @@ docmost_floc_optout_enabled: true
 # - https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security
 # - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security
 # - https://hstspreload.org/#opt-in
-# See: `docmost_http_header_strict_transport_security`
-docmost_hsts_preload_enabled: false
+# See: `misskey_http_header_strict_transport_security`
+misskey_hsts_preload_enabled: false
 
-# List of systemd services that the Docmost systemd service depends on
-docmost_systemd_required_services_list: "{{ docmost_systemd_required_services_list_default + docmost_systemd_required_services_list_auto + docmost_systemd_required_services_list_custom }}"
-docmost_systemd_required_services_list_default: "{{ [devture_systemd_docker_base_docker_service_name] if devture_systemd_docker_base_docker_service_name else [] }}"
-docmost_systemd_required_services_list_auto: []
-docmost_systemd_required_services_list_custom: []
+# List of systemd services that the Misskey systemd service depends on
+misskey_systemd_required_services_list: "{{ misskey_systemd_required_services_list_default + misskey_systemd_required_services_list_auto + misskey_systemd_required_services_list_custom }}"
+misskey_systemd_required_services_list_default: "{{ [devture_systemd_docker_base_docker_service_name] if devture_systemd_docker_base_docker_service_name else [] }}"
+misskey_systemd_required_services_list_auto: []
+misskey_systemd_required_services_list_custom: []
 
-# List of systemd services that the Docmost systemd service wants
-docmost_systemd_wanted_services_list: "{{ docmost_systemd_wanted_services_list_default + docmost_systemd_wanted_services_list_auto + docmost_systemd_wanted_services_list_custom }}"
-docmost_systemd_wanted_services_list_default: []
-docmost_systemd_wanted_services_list_auto: []
-docmost_systemd_wanted_services_list_custom: []
+# List of systemd services that the Misskey systemd service wants
+misskey_systemd_wanted_services_list: "{{ misskey_systemd_wanted_services_list_default + misskey_systemd_wanted_services_list_auto + misskey_systemd_wanted_services_list_custom }}"
+misskey_systemd_wanted_services_list_default: []
+misskey_systemd_wanted_services_list_auto: []
+misskey_systemd_wanted_services_list_custom: []
 
 # env.j2: Specify application's URL
-docmost_environment_variable_app_url: "{{ docmost_scheme }}://{{ docmost_hostname }}"
+misskey_environment_variable_app_url: "{{ misskey_scheme }}://{{ misskey_hostname }}"
 
 # env.j2: Specify application's secret (minimum of 32 characters)
 # Generate a strong secret. You can create one with a command like `pwgen -s 64 1`.
-docmost_environment_variable_app_secret: YOUR_SECRET_KEY_HERE
+misskey_environment_variable_app_secret: YOUR_SECRET_KEY_HERE
 
 # env.j2: Specify expiration time for JSON Web Tokens (default: 30 days)
-docmost_environment_variable_jwt_token_expires_in: 30d
+misskey_environment_variable_jwt_token_expires_in: 30d
 
 # env.j2: Specify configuration for Postgres database server
-docmost_database_hostname: ""
-docmost_database_port: 5432
-docmost_database_username: "postgres"
-docmost_database_password: ""
-docmost_database_name: "docmost"
-docmost_environment_variable_database_url: "postgres://{{ docmost_database_username }}:{{ docmost_database_password }}@{{ docmost_database_hostname }}:{{ docmost_database_port }}/{{ docmost_database_name }}?schema=public"
+misskey_database_hostname: ""
+misskey_database_port: 5432
+misskey_database_username: "postgres"
+misskey_database_password: ""
+misskey_database_name: "misskey"
+misskey_environment_variable_database_url: "postgres://{{ misskey_database_username }}:{{ misskey_database_password }}@{{ misskey_database_hostname }}:{{ misskey_database_port }}/{{ misskey_database_name }}?schema=public"
 
 # env.j2: Specify configuration for Redis, KeyDB, or Valkey server
-docmost_redis_username: ""
-docmost_redis_password: ""
-docmost_redis_hostname: ""
-docmost_redis_port: 6379
-docmost_redis_dbnumber: ""
-docmost_environment_variable_redis_url: "redis://{{ docmost_redis_username }}:{{ docmost_redis_password }}@{{ docmost_redis_hostname }}:{{ docmost_redis_port }}/{{ docmost_redis_dbnumber }}"
+misskey_redis_username: ""
+misskey_redis_password: ""
+misskey_redis_hostname: ""
+misskey_redis_port: 6379
+misskey_redis_dbnumber: ""
+misskey_environment_variable_redis_url: "redis://{{ misskey_redis_username }}:{{ misskey_redis_password }}@{{ misskey_redis_hostname }}:{{ misskey_redis_port }}/{{ misskey_redis_dbnumber }}"
 
 # env.j2: Specify the storage backend option
 # Valid values: local, s3
-docmost_environment_variable_storage_driver: local
+misskey_environment_variable_storage_driver: local
 
 # env.j2: Specify S3 driver configuration
 # Set a S3 access key ID
-docmost_environment_variable_aws_s3_access_key_id: ""
+misskey_environment_variable_aws_s3_access_key_id: ""
 # Set a S3 secret access key ID
-docmost_environment_variable_aws_s3_secret_access_key: ""
+misskey_environment_variable_aws_s3_secret_access_key: ""
 # Set the region where your S3 bucket is located
-docmost_environment_variable_aws_s3_region: ""
+misskey_environment_variable_aws_s3_region: ""
 # Set a S3 bucket name to use
-docmost_environment_variable_aws_s3_bucket: ""
+misskey_environment_variable_aws_s3_bucket: ""
 # The endpoint URL for your S3 service (optional; set if using a S3 compatible storage like Wasabi and Storj)
-docmost_environment_variable_aws_s3_endpoint: ""
+misskey_environment_variable_aws_s3_endpoint: ""
 # Control whether to force path style URLs (https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/Config.html#s3ForcePathStyle-property) for S3 objects
-docmost_environment_variable_aws_s3_force_path_style: false
+misskey_environment_variable_aws_s3_force_path_style: false
 
 # env.j2: Specify the maximum uploaded file size (default: 50mb)
-docmost_environment_variable_file_upload_size_limit: "50mb"
+misskey_environment_variable_file_upload_size_limit: "50mb"
 
 # env.j2: Control whether mailer is enabled
-docmost_mailer_enabled: false
+misskey_mailer_enabled: false
 
 # env.j2: Specify the mailer's configuration
 # Valid values: smtp, postmark
-docmost_environment_variable_mail_driver: smtp
+misskey_environment_variable_mail_driver: smtp
 # Set the email address that emails will be sent from
-docmost_environment_variable_mail_from_address: ''
+misskey_environment_variable_mail_from_address: ''
 # Set the name that emails will be sent from
-docmost_environment_variable_mail_from_name: docmost
+misskey_environment_variable_mail_from_name: misskey
 
 # env.j2: Specify SMTP driver configuration
 # Set the hostname of the SMTP server
-docmost_environment_variable_smtp_host: ''
+misskey_environment_variable_smtp_host: ''
 # Set the port to use for the SMTP server
-docmost_environment_variable_smtp_port: 587
+misskey_environment_variable_smtp_port: 587
 # Set the username for the SMTP server
-docmost_environment_variable_smtp_username: ""
+misskey_environment_variable_smtp_username: ""
 # Set the password for the SMTP server
-docmost_environment_variable_smtp_password: ""
+misskey_environment_variable_smtp_password: ""
 # Control whether TLS is used when connecting to the server
-docmost_environment_variable_smtp_secure: false
+misskey_environment_variable_smtp_secure: false
 # Control whether SSL errors are ignored
-docmost_environment_variable_smtp_ignoretls: false
+misskey_environment_variable_smtp_ignoretls: false
 
 # env.j2: Specify Postmark driver configuration
-docmost_environment_variable_postmark_token: ""
+misskey_environment_variable_postmark_token: ""
 
 # env.j2: Specify custom Draw.io server configuration
 # Example: https://embed.diagrams.net
-docmost_environment_variable_drawio_url: ""
+misskey_environment_variable_drawio_url: ""
 
 # env.j2: Control whether telemetry is disabled
-docmost_environment_variable_disable_telemetry: false
+misskey_environment_variable_disable_telemetry: false
 
 # Additional environment variables.
-# See: https://docmost.com/docs/self-hosting/environment-variables
-docmost_environment_variables_additional_variables: ""
+# See: https://misskey.com/docs/self-hosting/environment-variables
+misskey_environment_variables_additional_variables: ""

@@ -4,82 +4,82 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-- name: Check existence of Docmost systemd service
+- name: Check existence of Misskey systemd service
   ansible.builtin.stat:
-    path: "{{ devture_systemd_docker_base_systemd_path }}/{{ docmost_identifier }}.service"
-  register: docmost_service_stat
+    path: "{{ devture_systemd_docker_base_systemd_path }}/{{ misskey_identifier }}.service"
+  register: misskey_service_stat
 
-- name: Uninstall Docmost systemd services and files
-  when: docmost_service_stat.stat.exists | bool
+- name: Uninstall Misskey systemd services and files
+  when: misskey_service_stat.stat.exists | bool
   block:
-    - name: Ensure Docmost systemd service is stopped
+    - name: Ensure Misskey systemd service is stopped
       ansible.builtin.service:
-        name: "{{ docmost_identifier }}"
+        name: "{{ misskey_identifier }}"
         state: stopped
         enabled: false
         daemon_reload: true
 
-    - name: Ensure Docmost systemd service does not exist
+    - name: Ensure Misskey systemd service does not exist
       ansible.builtin.file:
-        path: "{{ devture_systemd_docker_base_systemd_path }}/{{ docmost_identifier }}.service"
+        path: "{{ devture_systemd_docker_base_systemd_path }}/{{ misskey_identifier }}.service"
         state: absent
 
-    - name: Ensure Docmost support files do not exist
+    - name: Ensure Misskey support files do not exist
       ansible.builtin.file:
-        path: "{{ docmost_base_path }}/{{ item }}"
+        path: "{{ misskey_base_path }}/{{ item }}"
         state: absent
       with_items:
         - env
         - labels
 
-    - name: Ensure Docmost image source files path does not exist
+    - name: Ensure Misskey image source files path does not exist
       ansible.builtin.file:
-        path: "{{ docmost_container_image_self_build_src_files_path }}"
+        path: "{{ misskey_container_image_self_build_src_files_path }}"
         state: absent
 
-    - name: Ensure Docmost local data path does not exist if empty
+    - name: Ensure Misskey local data path does not exist if empty
       ansible.builtin.command:
-        cmd: "rmdir {{ docmost_data_path }}"
-      register: docmost_data_path_deletion_result
-      changed_when: docmost_data_path_deletion_result.rc == 0
+        cmd: "rmdir {{ misskey_data_path }}"
+      register: misskey_data_path_deletion_result
+      changed_when: misskey_data_path_deletion_result.rc == 0
       failed_when: false
 
-    - name: Ensure Docmost base path does not exist if empty
+    - name: Ensure Misskey base path does not exist if empty
       ansible.builtin.command:
-        cmd: "rmdir {{ docmost_base_path }}"
-      register: docmost_base_path_deletion_result
-      changed_when: docmost_base_path_deletion_result.rc == 0
+        cmd: "rmdir {{ misskey_base_path }}"
+      register: misskey_base_path_deletion_result
+      changed_when: misskey_base_path_deletion_result.rc == 0
       failed_when: false
 
-    - name: Ensure Docmost container network does not exist via community.docker.docker_network
+    - name: Ensure Misskey container network does not exist via community.docker.docker_network
       when: devture_systemd_docker_base_container_network_creation_method == 'ansible-module'
       community.docker.docker_network:
-        name: "{{ docmost_container_network }}"
+        name: "{{ misskey_container_network }}"
         state: absent
 
-    - name: Ensure Docmost container network does not exist via ansible.builtin.command
+    - name: Ensure Misskey container network does not exist via ansible.builtin.command
       when: devture_systemd_docker_base_container_network_creation_method == 'command'
       ansible.builtin.command:
         cmd: >-
           {{ devture_systemd_docker_base_host_command_docker }} network rm
-          {{ docmost_container_network }}
+          {{ misskey_container_network }}
       register: network_deletion_result
-      changed_when: docmost_container_network in network_deletion_result.stdout
+      changed_when: misskey_container_network in network_deletion_result.stdout
 
-- name: Check existence of Docmost local data path
+- name: Check existence of Misskey local data path
   ansible.builtin.stat:
-    path: "{{ docmost_data_path }}"
-  register: docmost_data_path_stat
+    path: "{{ misskey_data_path }}"
+  register: misskey_data_path_stat
 
 # We just want to notify the user. Deleting data is too destructive.
-- name: Notify if Docmost local data remains
-  when: docmost_data_path_stat.stat.exists | bool
+- name: Notify if Misskey local data remains
+  when: misskey_data_path_stat.stat.exists | bool
   ansible.builtin.set_fact:
     devture_playbook_runtime_messages_list: |
       {{
         devture_playbook_runtime_messages_list | default([])
         +
         [
-          "Note: As the local Docmost instance has been removed, some old data remains in `" + docmost_data_path + "`. Feel free to delete it."
+          "Note: As the local Misskey instance has been removed, some old data remains in `" + misskey_data_path + "`. Feel free to delete it."
         ]
       }}

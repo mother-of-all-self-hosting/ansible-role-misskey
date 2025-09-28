@@ -2,9 +2,9 @@
 galaxy_info:
   author: Suguru Hirahara
   company: progressiv
-  role_name: docmost
+  role_name: misskey
   namespace: progressiv
-  description: Docmost
+  description: Misskey
   platforms:
     - name: Debian
       versions:

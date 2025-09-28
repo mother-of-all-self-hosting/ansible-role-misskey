@@ -4,24 +4,24 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-- name: Perform Docmost installation tasks
-  when: docmost_enabled | bool
+- name: Perform Misskey installation tasks
+  when: misskey_enabled | bool
   tags:
     - setup-all
-    - setup-docmost
+    - setup-misskey
     - install-all
-    - install-docmost
+    - install-misskey
   block:
-    - name: Validate Docmost configuration
+    - name: Validate Misskey configuration
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/validate_config.yml"
-    - name: Install Docmost
+    - name: Install Misskey
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/install.yml"
 
-- name: Perform Docmost uninstallation tasks
-  when: not docmost_enabled | bool
+- name: Perform Misskey uninstallation tasks
+  when: not misskey_enabled | bool
   tags:
     - setup-all
-    - setup-docmost
+    - setup-misskey
   block:
-    - name: Uninstall Docmost
+    - name: Uninstall Misskey
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/uninstall.yml"
