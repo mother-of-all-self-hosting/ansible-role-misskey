@@ -18,11 +18,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Setting up Misskey
 
-This is an [Ansible](https://www.ansible.com/) role which installs [Misskey](https://misskey.com/) to run as a [Docker](https://www.docker.com/) container wrapped in a systemd service.
+This is an [Ansible](https://www.ansible.com/) role which installs [Misskey](https://misskey-hub.net/en/) to run as a [Docker](https://www.docker.com/) container wrapped in a systemd service.
 
-Misskey is a free and open-source collaborative wiki and documentation software, designed for seamless real-time collaboration. It can be used to manage a wiki, a knowledge base, project documentation, etc. It has various functions such as granular permissions management system, page history to track changes of articles, etc. It also supports diagramming tools like Draw.io, Excalidraw and Mermaid.
+Misskey is a free decentralized microblogging platform based on the ActivityPub protocol, which can connect to other Fediverse platforms such as Mastodon and PeerTube.
 
-See the project's [documentation](https://misskey.com/docs/) to learn what Misskey does and why it might be useful to you.
+See the project's [documentation](https://misskey-hub.net/en/docs/) to learn what Misskey does and why it might be useful to you.
 
 ## Prerequisites
 
@@ -104,7 +104,13 @@ If you use the MASH playbook, the shortcut commands with the [`just` program](ht
 
 After running the command for installation, Misskey becomes available at the specified hostname like `https://example.com`.
 
-To get started, open the URL on a web browser and create a first workspace by inputting required information. For an email address, make sure to input your own email address, not the one specified to `misskey_environment_variable_mail_from_address`.
+To get started, open the URL with a web browser, and follow the set up wizard.
+
+### Enabling the email function
+
+**By default the mailer function is not enabled**, which is used for email address confirmation on sign-up and resetting passwords.
+
+After logging in to the instance as the administrator user, you can manually enable it on the "Email server" settings at `https://example.com/admin/email-settings`.
 
 ## Troubleshooting
 
