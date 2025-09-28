@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-# Project source code URL: https://github.com/misskey/misskey
+# Project source code URL: https://github.com/misskey-dev/misskey
 
 misskey_enabled: true
 
@@ -15,8 +15,8 @@ misskey_identifier: misskey
 misskey_base_path: "/{{ misskey_identifier }}"
 misskey_data_path: "{{ misskey_base_path }}/data"
 
-# renovate: datasource=docker depName=misskey/misskey versioning=semver
-misskey_version: 0.23.2
+# renovate: datasource=docker depName=misskey/misskey
+misskey_version: 2025.9.0
 
 misskey_uid: ""
 misskey_gid: ""
@@ -43,8 +43,8 @@ misskey_container_image_force_pull: "{{ misskey_container_image.endswith(':lates
 
 misskey_container_image_self_build: false
 misskey_container_image_self_build_name: "misskey/misskey:{{ misskey_container_image_self_build_repo_version }}"
-misskey_container_image_self_build_repo: "https://github.com/misskey/misskey.git"
-misskey_container_image_self_build_repo_version: "{{ 'v' + misskey_version if misskey_version != 'latest' else 'main' }}"
+misskey_container_image_self_build_repo: "https://github.com/misskey-dev/misskey.git"
+misskey_container_image_self_build_repo_version: "{{ misskey_version if misskey_version != 'latest' else 'main' }}"
 misskey_container_image_self_build_src_files_path: "{{ misskey_base_path }}/docker-src"
 
 # Controls whether the container exposes its HTTP port (tcp/80 in the container).
