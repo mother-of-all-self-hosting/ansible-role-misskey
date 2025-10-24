@@ -17,7 +17,7 @@ misskey_config_path: "{{ misskey_base_path }}/config"
 misskey_data_path: "{{ misskey_base_path }}/data"
 
 # renovate: datasource=docker depName=misskey/misskey
-misskey_version: 2025.10.0
+misskey_version: 2025.10.1
 
 misskey_uid: ""
 misskey_gid: ""
