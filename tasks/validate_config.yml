@@ -20,6 +20,21 @@
     - misskey_database_password
     - misskey_redis_hostname
 
+- name: Fail if Misskey fulltextSearch provider option is invalid
+  ansible.builtin.fail:
+    msg: >-
+      misskey_config_fulltext_search_provider must be 'meilisearch', 'sqlLike', or 'sqlPgroonga'
+  when: "misskey_config_fulltext_search_provider not in ['meilisearch', 'sqlLike', 'sqlPgroonga']"
+
+- name: Fail if Meilisearch settings not defined
+  ansible.builtin.fail:
+    msg: >-
+      You need to define a required configuration setting (`{{ item }}`) when `misskey_config_fulltext_search_provider` is `meilisearch`
+  when: "misskey_config_fulltext_search_provider == 'meilisearch' and lookup('vars', item, default='') | string | length == 0"
+  with_items:
+    - misskey_config_meilisearch_host
+    - misskey_config_meilisearch_apikey
+
 - name: Run if Traefik is enabled
   when: misskey_container_labels_traefik_enabled | bool
   block:

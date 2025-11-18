@@ -80,6 +80,28 @@ misskey_redis_port: 6379
 
 Make sure to replace `YOUR_REDIS_SERVER_HOSTNAME_HERE` with the hostname of your Redis server.
 
+### Connecting to a Meilisearch instance (optional)
+
+For fulltext search function, you can optionally have the instance connect to a Meilisearch instance by adding the following configuration to your `vars.yml` file:
+
+```yaml
+misskey_config_fulltext_search_provider: meilisearch
+misskey_config_meilisearch_host: YOUR_MEILISEARCH_HOSTNAME_HERE
+misskey_config_meilisearch_apikey: YOUR_MEILISEARCH_KEY_HERE
+```
+
+If the Meilisearch instance is served with SSL, add the following configuration to your `vars.yml` file as well:
+
+```yaml
+misskey_config_meilisearch_ssl: true
+```
+
+>[!NOTE]
+>
+> - Do not include a scheme (http/https) to `misskey_config_meilisearch_host` as it is taken care of by `misskey_config_meilisearch_ssl`
+> - The default Admin API Key is sufficient for using Meilisearch on the instance. It is [not recommended](https://www.meilisearch.com/docs/learn/security/basic_security) to use the master key for operations anything but managing other API keys.
+> - Note search function is disabled by default. See [below](#enabling-note-search) for details.
+
 ### Extending the configuration
 
 There are some additional things you may wish to configure about the component.
@@ -111,6 +133,12 @@ To get started, open the URL with a web browser, and follow the set up wizard.
 **By default the mailer function is not enabled**, which is used for email address confirmation on sign-up and resetting passwords.
 
 After logging in to the instance as the administrator user, you can manually enable it on the "Email server" settings at `https://example.com/admin/email-settings`.
+
+### Enabling note search
+
+**Note search function is disabled by default.** See [this comment](https://github.com/misskey-dev/misskey/issues/10399#issuecomment-1481429775) on the repository at GitHub for details about how to enable it.
+
+To make the function work, you might have to log out of the account and re-login to the instance.
 
 ## Troubleshooting
 

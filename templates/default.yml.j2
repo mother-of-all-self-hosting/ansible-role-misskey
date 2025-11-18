@@ -137,15 +137,15 @@ fulltextSearch:
 # If you select "meilisearch" for "fulltextSearch.provider", it must be set.
 # You can set scope to local (default value) or global
 # (include notes from remote).
-
-#meilisearch:
-#  host: meilisearch
-#  port: 7700
-#  apiKey: ''
-#  ssl: true
-#  index: ''
-#  scope: local
-
+{% if misskey_config_fulltext_search_provider == 'meilisearch' %}
+meilisearch:
+  host: '{{ misskey_config_meilisearch_host }}'
+  port: {{ misskey_config_meilisearch_port }}
+  apiKey: '{{ misskey_config_meilisearch_apikey }}'
+  ssl: {{ misskey_config_meilisearch_ssl | to_json }}
+  index: '{{ misskey_config_meilisearch_index }}'
+  scope: {{ misskey_config_meilisearch_scope }}
+{% endif %}
 #   ┌───────────────┐
 #───┘ ID generation └───────────────────────────────────────────
 

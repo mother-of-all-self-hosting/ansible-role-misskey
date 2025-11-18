@@ -194,7 +194,19 @@ misskey_redis_prefix: ""
 misskey_redis_database: ""
 
 # Specify the provider for fulltext search configuration
+# Valid values: meilisearch, sqlLike, sqlPgroonga
 misskey_config_fulltext_search_provider: sqlLike
+
+# Specify configuration for Meilisearch server
+misskey_config_meilisearch_host: ""
+misskey_config_meilisearch_port: 7700
+misskey_config_meilisearch_apikey: ""
+misskey_config_meilisearch_ssl: true
+misskey_config_meilisearch_index: "{{ misskey_identifier }}" # See: https://misskey-hub.net/en/docs/releases/#note-13
+
+# Specify Meilisearch scope
+# Valid values: local, global
+misskey_config_meilisearch_scope: local
 
 # Specify size limits (bytes) of files to be uploaded or downloaded
 misskey_config_max_file_size: 262144000
