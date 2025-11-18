@@ -78,9 +78,9 @@ redis:
   host: "{{ misskey_redis_hostname }}"
   port: {{ misskey_redis_port }}
   #family: 0  # 0=Both, 4=IPv4, 6=IPv6
-  #pass: example-pass
-  #prefix: example-prefix
-  #db: 1
+  pass: {{ misskey_redis_password }}
+  prefix: {{ misskey_redis_prefix }}
+  db: {{ misskey_redis_database }}
 
 #redisForPubsub:
 #  host: redis

@@ -189,6 +189,9 @@ misskey_database_replications: false
 # Specify configuration for Redis, KeyDB, or Valkey server
 misskey_redis_hostname: ""
 misskey_redis_port: 6379
+misskey_redis_password: ""
+misskey_redis_prefix: ""
+misskey_redis_database: ""
 
 # Specify the provider for fulltext search configuration
 misskey_config_fulltext_search_provider: sqlLike
