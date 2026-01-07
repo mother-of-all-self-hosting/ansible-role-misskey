@@ -56,4 +56,6 @@ traefik.http.routers.{{ misskey_identifier }}.tls.certResolver={{ misskey_contai
 traefik.http.services.{{ misskey_identifier }}.loadbalancer.server.port={{ misskey_container_http_port }}
 {% endif %}
 
-{{ misskey_container_labels_additional_labels }}
+{% for arg in misskey_container_labels_additional_labels %}
+{{ arg }}
+{% endfor %}

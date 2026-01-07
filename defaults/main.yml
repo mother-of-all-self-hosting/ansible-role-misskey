@@ -112,11 +112,11 @@ misskey_container_labels_traefik_additional_response_headers_custom: {}
 #
 # Example:
 # misskey_container_labels_additional_labels_custom: |
-#   my.label=1
-#   another.label="here"
-misskey_container_labels_additional_labels: "{{ misskey_container_labels_additional_labels_auto | combine(misskey_container_labels_additional_labels_custom) }}"
-misskey_container_labels_additional_labels_auto: {}
-misskey_container_labels_additional_labels_custom: {}
+#   - my.label=1
+#   - another.label="here"
+misskey_container_labels_additional_labels: "{{ misskey_container_labels_additional_labels_auto + misskey_container_labels_additional_labels_custom }}"
+misskey_container_labels_additional_labels_auto: []
+misskey_container_labels_additional_labels_custom: []
 
 # A list of extra arguments to pass to the container (`docker create` command)
 misskey_container_extra_arguments: "{{ misskey_container_extra_arguments_auto + misskey_container_extra_arguments_custom }}"
