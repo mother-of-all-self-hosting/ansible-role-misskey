@@ -31,9 +31,9 @@
   ansible.builtin.copy:
     content: "{{ misskey_configuration | to_nice_yaml(indent=2, width=999999) }}"
     dest: "{{ misskey_config_path }}/default.yml"
+    mode: "0640"
     owner: "{{ misskey_uid }}"
     group: "{{ misskey_gid }}"
-    mode: "0640"
 
 - name: Ensure Misskey container image is pulled via community.docker.docker_image
   when: devture_systemd_docker_base_container_image_pull_method == 'ansible-module'
