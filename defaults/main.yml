@@ -22,12 +22,12 @@ misskey_version: 2025.12.1
 misskey_uid: ""
 misskey_gid: ""
 
+# The scheme used for serving Misskey.
+misskey_scheme: https
+
 # The hostname at which Misskey is served.
 # Once the instance has started, changing the value will break the instance!
 misskey_hostname: ""
-
-# Specify URI scheme
-misskey_scheme: https
 
 # The path at which Misskey is served.
 # This value must either be `/` or not end with a slash (e.g. `/misskey`).
