@@ -65,6 +65,7 @@
       community.docker.docker_network:
         name: "{{ misskey_container_network }}"
         state: absent
+      register: misskey_network_deletion_result
 
     - name: Ensure Misskey container network does not exist via ansible.builtin.command
       when: devture_systemd_docker_base_container_network_creation_method == 'command'
@@ -72,8 +73,8 @@
         cmd: >-
           {{ devture_systemd_docker_base_host_command_docker }} network rm
           {{ misskey_container_network }}
-      register: network_deletion_result
-      changed_when: misskey_container_network in network_deletion_result.stdout
+      register: misskey_network_deletion_result
+      changed_when: misskey_container_network in misskey_network_deletion_result.stdout
 
 - name: Check existence of Misskey local config path
   ansible.builtin.stat:
