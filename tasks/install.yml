@@ -26,6 +26,7 @@
   with_items:
     - env
     - labels
+  register: misskey_support_files_result
 
 - name: Ensure Misskey config file installed
   ansible.builtin.copy:
@@ -34,6 +35,7 @@
     mode: "0640"
     owner: "{{ misskey_uid }}"
     group: "{{ misskey_gid }}"
+  register: misskey_config_result
 
 - name: Ensure Misskey container image is pulled via community.docker.docker_image
   when: devture_systemd_docker_base_container_image_pull_method == 'ansible-module'
@@ -42,20 +44,20 @@
     source: "{{ 'pull' if ansible_version.major > 2 or ansible_version.minor > 7 else omit }}"
     force_source: "{{ misskey_container_image_force_pull if ansible_version.major > 2 or ansible_version.minor >= 8 else omit }}"
     force: "{{ omit if ansible_version.major > 2 or ansible_version.minor >= 8 else misskey_container_image_force_pull }}"
-  register: result
+  register: misskey_container_image_pull_result
   retries: "{{ devture_playbook_help_container_retries_count }}"
   delay: "{{ devture_playbook_help_container_retries_delay }}"
-  until: result is not failed
+  until: misskey_container_image_pull_result is not failed
 
 - name: Ensure Misskey container image is pulled via ansible.builtin.command
   when: devture_systemd_docker_base_container_image_pull_method == 'command'
   ansible.builtin.command:
     cmd: "{{ devture_systemd_docker_base_host_command_docker }} pull {{ misskey_container_image }}"
-  register: result
+  register: misskey_container_image_pull_result
   retries: "{{ devture_playbook_help_container_retries_count }}"
   delay: "{{ devture_playbook_help_container_retries_delay }}"
-  until: result is not failed
-  changed_when: "'Downloaded newer image' in result.stdout"
+  until: misskey_container_image_pull_result is not failed
+  changed_when: "'Downloaded newer image' in misskey_container_image_pull_result.stdout"
 
 - name: Ensure Misskey container network is created via community.docker.docker_network
   when: devture_systemd_docker_base_container_network_creation_method == 'ansible-module'
@@ -83,3 +85,14 @@
     src: "{{ role_path }}/templates/systemd/misskey.service.j2"
     dest: "{{ devture_systemd_docker_base_systemd_path }}/{{ misskey_identifier }}.service"
     mode: "0644"
+  register: misskey_systemd_service_result
+
+- name: Determine whether Misskey needs a restart
+  ansible.builtin.set_fact:
+    misskey_restart_necessary: >-
+      {{
+        misskey_support_files_result.changed | default(false)
+        or misskey_systemd_service_result.changed | default(false)
+        or misskey_config_result.changed | default(false)
+        or misskey_container_image_pull_result.changed | default(false)
+      }}
