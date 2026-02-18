@@ -92,7 +92,7 @@
     misskey_restart_necessary: >-
       {{
         misskey_support_files_result.changed | default(false)
-        or misskey_systemd_service_result.changed | default(false)
         or misskey_config_file_result.changed | default(false)
+        or misskey_systemd_service_result.changed | default(false)
         or misskey_container_image_pull_result.changed | default(false)
       }}
