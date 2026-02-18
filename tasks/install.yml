@@ -28,14 +28,14 @@
     - labels
   register: misskey_support_files_result
 
-- name: Ensure Misskey config file installed
+- name: Ensure Misskey configuration file installed
   ansible.builtin.copy:
     content: "{{ misskey_configuration | to_nice_yaml(indent=2, width=999999) }}"
     dest: "{{ misskey_config_path }}/default.yml"
     mode: "0640"
     owner: "{{ misskey_uid }}"
     group: "{{ misskey_gid }}"
-  register: misskey_config_result
+  register: misskey_config_file_result
 
 - name: Ensure Misskey container image is pulled via community.docker.docker_image
   when: devture_systemd_docker_base_container_image_pull_method == 'ansible-module'
@@ -93,6 +93,6 @@
       {{
         misskey_support_files_result.changed | default(false)
         or misskey_systemd_service_result.changed | default(false)
-        or misskey_config_result.changed | default(false)
+        or misskey_config_file_result.changed | default(false)
         or misskey_container_image_pull_result.changed | default(false)
       }}

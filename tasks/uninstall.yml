@@ -32,7 +32,7 @@
         - env
         - labels
 
-    - name: Ensure Misskey config file does not exist
+    - name: Ensure Misskey configuration file does not exist
       ansible.builtin.file:
         path: "{{ misskey_config_path }}/{{ item }}"
         state: absent
