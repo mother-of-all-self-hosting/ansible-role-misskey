@@ -26,7 +26,7 @@ See the project's [documentation](https://misskey-hub.net/en/docs/) to learn wha
 
 ## Prerequisites
 
-To run a Misskey instance it is necessary to prepare a [Postgres](https://www.postgresql.org/) database server and [Redis](https://redis.io/) server for managing a metadata database.
+To run a Misskey instance it is necessary to prepare a [Postgres](https://www.postgresql.org/) database server and [Redis](https://redis.io/) database for managing cache data.
 
 If you are looking for Ansible roles for them, you can check out [ansible-role-postgres](https://github.com/mother-of-all-self-hosting/ansible-role-postgres) and [ansible-role-redis](https://github.com/mother-of-all-self-hosting/ansible-role-redis), both of which are maintained by the [Mother-of-All-Self-Hosting (MASH)](https://github.com/mother-of-all-self-hosting) team. The roles for [KeyDB](https://keydb.dev/) ([ansible-role-keydb](https://github.com/mother-of-all-self-hosting/ansible-role-keydb)) and [Valkey](https://valkey.io/) ([ansible-role-valkey](https://github.com/mother-of-all-self-hosting/ansible-role-valkey)) are available as well.
 
@@ -67,18 +67,18 @@ After adjusting the hostname, make sure to adjust your DNS records to point the 
 
 **Note**: hosting Misskey under a subpath (by configuring the `misskey_path_prefix` variable) does not seem to be possible due to Misskey's technical limitations.
 
-### Set variables for connecting to a Redis server
+### Configure a Redis database
 
-As described above, it is necessary to set up a [Redis](https://redis.io/) server for managing a metadata database of a Misskey instance. You can use either KeyDB or Valkey alternatively.
+It is necessary to set up a [Redis](https://redis.io/) database for the Misskey instance. KeyDB or Valkey can also be used instead.
 
-Having configured it, you need to add and adjust the following configuration to your `vars.yml` file, so that the Misskey instance will connect to the server:
+To enable the Redis database for Misskey, add the following configuration to your `vars.yml` file:
 
 ```yaml
 misskey_redis_hostname: YOUR_REDIS_SERVER_HOSTNAME_HERE
 misskey_redis_port: 6379
 ```
 
-Make sure to replace `YOUR_REDIS_SERVER_HOSTNAME_HERE` with the hostname of your Redis server.
+Make sure to replace `YOUR_REDIS_SERVER_HOSTNAME_HERE` with your own value.
 
 ### Connecting to a Meilisearch instance (optional)
 
