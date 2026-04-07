@@ -225,7 +225,7 @@ misskey_database_name: misskey
 misskey_database_ssl: false
 misskey_database_replications: false
 
-# Specify configuration for Redis, KeyDB, or Valkey server
+# Specify configuration for Redis
 misskey_redis_hostname: ""
 misskey_redis_port: 6379
 misskey_redis_password: ""
