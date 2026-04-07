@@ -28,7 +28,7 @@ See the project's [documentation](https://misskey-hub.net/en/docs/) to learn wha
 
 To run a Misskey instance it is necessary to prepare a [Postgres](https://www.postgresql.org/) database server and [Redis](https://redis.io/) database for managing cache data.
 
-If you are looking for Ansible roles for them, you can check out [ansible-role-postgres](https://github.com/mother-of-all-self-hosting/ansible-role-postgres) and [ansible-role-redis](https://github.com/mother-of-all-self-hosting/ansible-role-redis), both of which are maintained by the [Mother-of-All-Self-Hosting (MASH)](https://github.com/mother-of-all-self-hosting) team. The role for Valkey ([ansible-role-valkey](https://github.com/mother-of-all-self-hosting/ansible-role-valkey)) is available as well.
+If you are looking for Ansible roles for them, you can check out [ansible-role-postgres](https://github.com/mother-of-all-self-hosting/ansible-role-postgres) and [ansible-role-redis](https://github.com/mother-of-all-self-hosting/ansible-role-redis), both of which are maintained by the [Mother-of-All-Self-Hosting (MASH)](https://github.com/mother-of-all-self-hosting) team. The role for [Valkey](https://valkey.io/) ([ansible-role-valkey](https://github.com/mother-of-all-self-hosting/ansible-role-valkey)) is available as well.
 
 ## Adjusting the playbook configuration
 
@@ -69,7 +69,7 @@ After adjusting the hostname, make sure to adjust your DNS records to point the 
 
 ### Configure a Redis database
 
-It is necessary to set up a [Redis](https://redis.io/) database for the Misskey instance. [Valkey](https://valkey.io/) can also be used instead.
+It is necessary to set up a Redis database for the Misskey instance. Valkey can also be used instead.
 
 To enable the Redis database for Misskey, add the following configuration to your `vars.yml` file:
 
