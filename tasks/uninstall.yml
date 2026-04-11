@@ -85,7 +85,7 @@
   register: misskey_config_path_stat
 
 # We just want to notify the user. Deleting config is too destructive.
-- name: Notify if Misskey local config remains
+- name: Inject the message about the remaining Misskey local config path
   when: misskey_config_path_stat.stat.exists | bool
   ansible.builtin.set_fact:
     devture_playbook_runtime_messages_list: |
@@ -103,7 +103,7 @@
   register: misskey_data_path_stat
 
 # We just want to notify the user. Deleting data is too destructive.
-- name: Notify if Misskey local data remains
+- name: Inject the message about the remaining Misskey local data path
   when: misskey_data_path_stat.stat.exists | bool
   ansible.builtin.set_fact:
     devture_playbook_runtime_messages_list: |
