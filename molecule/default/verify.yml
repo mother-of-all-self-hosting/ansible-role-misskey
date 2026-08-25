@@ -33,11 +33,55 @@
         file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
         name: misskey_defaults
 
-    - name: Read the Misskey container the role created
+    # ------------------------------------------------------------------
+    # The unit is up and the container it manages exists
+    # ------------------------------------------------------------------
+
+    - name: Wait for the Misskey systemd service to become active (up to 180s)
+      ansible.builtin.systemd_service:
+        name: "{{ misskey_molecule_container }}.service"
+      register: misskey_service
+      until: misskey_service.status.ActiveState == 'active'
+      retries: 36
+      delay: 5
+
+    - name: Assert the Misskey systemd service is active
+      ansible.builtin.assert:
+        that: misskey_service.status.ActiveState == 'active'
+        fail_msg: "{{ misskey_molecule_container }}.service is not active ({{ misskey_service.status.ActiveState }})"
+        success_msg: "{{ misskey_molecule_container }}.service is active"
+
+    - name: Retrieve the Misskey service log for debugging
+      when: misskey_debug_service_enabled | bool
       ansible.builtin.command:
-        cmd: "docker inspect {{ misskey_molecule_container }}"
+        cmd: "journalctl -xeu {{ misskey_molecule_container }}.service"
+      changed_when: false
+
+    # The unit creates the container with `--rm`, so a Misskey that cannot start leaves
+    # no container behind at all - and `docker inspect misskey` would then quietly
+    # resolve to the container *network* of that name instead, an object with no
+    # `Config`, failing much later and a long way from the cause. `--type container`
+    # keeps the failure honest, and the retries ride out the gap between the unit
+    # becoming active and the container being created.
+    - name: Wait for the Misskey container to exist (up to 120s)
+      ansible.builtin.command:
+        cmd: "docker inspect --type container {{ misskey_molecule_container }}"
       register: misskey_container_raw
       changed_when: false
+      failed_when: false
+      until: misskey_container_raw.rc == 0
+      retries: 24
+      delay: 5
+
+    - name: Assert the Misskey container the role created is there
+      ansible.builtin.assert:
+        that: misskey_container_raw.rc == 0
+        fail_msg: >-
+          No container named {{ misskey_molecule_container }} exists. The unit creates it
+          with `--rm`, so this is what a Misskey that dies on startup looks like -
+          check `journalctl -u {{ misskey_molecule_container }}.service`.
+          ({{ misskey_container_raw.stderr | default('') | trim }})
+        success_msg: "The container {{ misskey_molecule_container }} exists"
 
     - name: Make sense of the Misskey container
       ansible.builtin.set_fact:
@@ -137,28 +181,8 @@
           the role adds is load-bearing
 
     # ------------------------------------------------------------------
-    # The unit is up and Misskey itself answers
+    # Misskey itself answers
     # ------------------------------------------------------------------
-
-    - name: Wait for the Misskey systemd service to become active (up to 180s)
-      ansible.builtin.systemd_service:
-        name: "{{ misskey_molecule_container }}.service"
-      register: misskey_service
-      until: misskey_service.status.ActiveState == 'active'
-      retries: 36
-      delay: 5
-
-    - name: Assert the Misskey systemd service is active
-      ansible.builtin.assert:
-        that: misskey_service.status.ActiveState == 'active'
-        fail_msg: "{{ misskey_molecule_container }}.service is not active ({{ misskey_service.status.ActiveState }})"
-        success_msg: "{{ misskey_molecule_container }}.service is active"
-
-    - name: Retrieve the Misskey service log for debugging
-      when: misskey_debug_service_enabled | bool
-      ansible.builtin.command:
-        cmd: "journalctl -xeu {{ misskey_molecule_container }}.service"
-      changed_when: false
 
     # `active` only says the docker client is running. /api/meta is answered by Misskey
     # itself, and only after it has run its migrations against Postgres, connected to

@@ -51,8 +51,9 @@ Tests a standard Misskey installation against a Postgres installed by [ansible-r
 
 The verification does not stop at "the systemd service is active". It:
 
-- establishes, before anything else, that the stock Misskey image cannot start without the role's rendered configuration, and that a Misskey given everything *except* the bind-mount of `misskey_compiled_config_path` dies with `EACCES` on `/misskey/built/.config.json` — which is what makes that mount attributable rather than assumed
-- waits for Misskey's own `/api/meta` rather than for the unit
+- waits for the unit and then for the container itself to exist — the unit creates it with `--rm`, so a Misskey that dies on startup leaves nothing behind, and `docker inspect misskey` would otherwise resolve to the container *network* of the same name and fail much later, far from the cause
+- establishes, before it asserts anything about the role, that the stock Misskey image cannot start without the role's rendered configuration, and that a Misskey given everything *except* the bind-mount of `misskey_compiled_config_path` dies with `EACCES` on `/misskey/built/.config.json` — which is what makes that mount attributable rather than assumed
+- waits for Misskey's own `/api/meta` rather than settling for the unit being `active`
 - asserts the running version four ways: the API, the application's own `package.json`, the image tag, and the value of the image's `org.opencontainers.image.version` label — all against the `misskey_version` leaf that Renovate bumps
 - checks that Misskey reports the address `misskey_hostname` gave it, that it answers on a port which is not Misskey's own default, that `templates/env.j2` reached the container's environment, and that `misskey_container_additional_volumes_custom` really is mounted
 - checks that the moderation API refuses anonymous callers and forged tokens, and that signing in with the wrong password is refused
