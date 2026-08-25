@@ -1,6 +1,6 @@
 <!--
 SPDX-FileCopyrightText: 2020 - 2024 MDAD project contributors
-SPDX-FileCopyrightText: 2020 - 2024 Slavi Pantaleev
+SPDX-FileCopyrightText: 2020 - 2026 Slavi Pantaleev
 SPDX-FileCopyrightText: 2020 Aaron Raimist
 SPDX-FileCopyrightText: 2020 Chris van Dijk
 SPDX-FileCopyrightText: 2020 Dominik Zajac
@@ -145,3 +145,11 @@ To make the function work, you might have to log out of the account and re-login
 ### Check the service's logs
 
 You can find the logs in [systemd-journald](https://www.freedesktop.org/software/systemd/man/systemd-journald.service.html) by logging in to the server with SSH and running `journalctl -fu misskey` (or how you/your playbook named the service, e.g. `mash-misskey`).
+
+### `EACCES: permission denied, open '/misskey/built/.config.json'`
+
+Misskey converts `.config/default.yml` into `built/.config.json` on every start and reads the JSON back. That destination lives inside the container image, in a directory owned by the image's own `misskey` user (uid 991) and writable by nobody else, while this role runs the container as `misskey_uid`:`misskey_gid`. A container that cannot write there dies before it contacts the database, and `Restart=always` turns that into a crash loop that `systemctl is-active` still reports as `active`.
+
+The role works around this by bind-mounting `misskey_compiled_config_path` (`/misskey/compiled-config.json` by default) over that destination, so re-running the playbook is enough to fix an instance that shows this error. The file holds derived data only - Misskey rewrites it on every start - so it can be deleted freely.
+
+Misskey started compiling its configuration this way in version `2025.12.0`; earlier versions read the YAML directly and are unaffected.

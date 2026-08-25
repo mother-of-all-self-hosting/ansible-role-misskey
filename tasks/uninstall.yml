@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2023 Slavi Pantaleev
+# SPDX-FileCopyrightText: 2023 - 2026 Slavi Pantaleev
 # SPDX-FileCopyrightText: 2025 Suguru Hirahara
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
@@ -31,6 +31,13 @@
       with_items:
         - env
         - labels
+
+    # Unlike the configuration and the uploads below, this one is derived data - Misskey
+    # rewrites it from `default.yml` on every start - so deleting it loses nothing.
+    - name: Ensure Misskey compiled configuration file does not exist
+      ansible.builtin.file:
+        path: "{{ misskey_compiled_config_path }}"
+        state: absent
 
     - name: Ensure Misskey configuration file does not exist
       ansible.builtin.file:

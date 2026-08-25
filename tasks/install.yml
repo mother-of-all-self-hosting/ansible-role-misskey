@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2023 - 2025 Slavi Pantaleev
+# SPDX-FileCopyrightText: 2023 - 2026 Slavi Pantaleev
 # SPDX-FileCopyrightText: 2025 Suguru Hirahara
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
@@ -36,6 +36,25 @@
     owner: "{{ misskey_uid }}"
     group: "{{ misskey_gid }}"
   register: misskey_config_file_result
+
+# Misskey compiles `.config/default.yml` into `built/.config.json` on every start and
+# reads the JSON back. That destination is inside the image, in a directory owned by the
+# image's own `misskey` user (uid 991) and writable by nobody else, so the container -
+# which runs as `misskey_uid`:`misskey_gid` - can only reach it through a bind-mount of a
+# host file that it owns. Without it, Misskey dies with `EACCES: permission denied,
+# open '/misskey/built/.config.json'` before it ever contacts the database.
+#
+# The contents do not matter: Misskey overwrites the file at startup. The timestamps are
+# preserved so that this task does not report a change on every run.
+- name: Ensure Misskey compiled configuration file exists
+  ansible.builtin.file:
+    path: "{{ misskey_compiled_config_path }}"
+    state: touch
+    mode: "0640"
+    owner: "{{ misskey_uid }}"
+    group: "{{ misskey_gid }}"
+    modification_time: preserve
+    access_time: preserve
 
 - name: Ensure Misskey container image is pulled via community.docker.docker_image_pull
   when: devture_systemd_docker_base_container_image_pull_method == 'ansible-module'

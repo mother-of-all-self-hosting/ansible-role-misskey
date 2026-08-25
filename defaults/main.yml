@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2023 - 2024 Nikita Chernyi
-# SPDX-FileCopyrightText: 2023 - 2025 Slavi Pantaleev
+# SPDX-FileCopyrightText: 2023 - 2026 Slavi Pantaleev
 # SPDX-FileCopyrightText: 2024 Sergio Durigan Junior
 # SPDX-FileCopyrightText: 2025 MASH project contributors
 # SPDX-FileCopyrightText: 2025 Suguru Hirahara
@@ -15,6 +15,22 @@ misskey_identifier: misskey
 misskey_base_path: "/{{ misskey_identifier }}"
 misskey_config_path: "{{ misskey_base_path }}/config"
 misskey_data_path: "{{ misskey_base_path }}/data"
+
+# The path (on the host) of the file that Misskey compiles its configuration into.
+#
+# On startup, Misskey converts `.config/default.yml` into `built/.config.json` and reads
+# the JSON back from there. That destination lives inside the container image, in a
+# directory owned by the image's own `misskey` user (uid 991) and not writable by anyone
+# else, so a container running as another user dies with
+# `EACCES: permission denied, open '/misskey/built/.config.json'` before it ever gets as
+# far as contacting the database. Since this role runs the container as
+# `misskey_uid`:`misskey_gid`, the destination is bind-mounted from the host instead,
+# where the file belongs to that user.
+#
+# The file is derived data - Misskey rewrites it from `default.yml` on every start - so
+# there is nothing in it worth preserving. It does carry the database and Redis
+# credentials, which is why it is not world-readable.
+misskey_compiled_config_path: "{{ misskey_base_path }}/compiled-config.json"
 
 # renovate: datasource=docker depName=misskey/misskey versioning=semver
 misskey_version: 2026.6.0
