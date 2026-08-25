@@ -33,7 +33,7 @@ misskey_data_path: "{{ misskey_base_path }}/data"
 misskey_compiled_config_path: "{{ misskey_base_path }}/compiled-config.json"
 
 # renovate: datasource=docker depName=misskey/misskey versioning=semver
-misskey_version: 2026.6.0
+misskey_version: 2026.7.0
 
 misskey_uid: ""
 misskey_gid: ""
