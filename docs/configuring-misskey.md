@@ -108,9 +108,9 @@ There are some additional things you may wish to configure about the service.
 
 Take a look at:
 
-- [`defaults/main.yml`](../defaults/main.yml) for some variables that you can customize via your `vars.yml` file. You can override settings (even those that don't have dedicated playbook variables) using the `misskey_config_additional_configurations` variable
+- [`defaults/main.yml`](../defaults/main.yml) for some variables that you can customize via your `vars.yml` file. You can override settings (even those that don't have dedicated playbook variables) using the `misskey_configuration_extension_yaml` variable
 
-See its [configuration parameters](https://github.com/misskey-dev/misskey/blob/master/.config/docker_example.yml) for a complete list of Misskey's config options that you could put in `misskey_config_additional_configurations`.
+See its [configuration parameters](https://github.com/misskey-dev/misskey/blob/master/.config/docker_example.yml) for a complete list of Misskey's config options that you could put in `misskey_configuration_extension_yaml`.
 
 ## Installing
 
