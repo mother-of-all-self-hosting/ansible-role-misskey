@@ -47,6 +47,16 @@
     # The negative controls: the same image, without the role's doing
     # ------------------------------------------------------------------
 
+    # The controls below run under fixed names, so that a leftover from an interrupted
+    # run cannot turn into a name conflict that reads like a failing control.
+    - name: Remove any leftover Misskey control containers
+      ansible.builtin.command:
+        cmd: >-
+          docker rm -f {{ misskey_verify_stock_container }}
+          {{ misskey_verify_uid_container }}
+      changed_when: true
+      failed_when: false
+
     # Nothing asserted below is evidence about the role unless the stock image cannot
     # produce it unaided. It cannot: with no configuration file to compile, Misskey
     # aborts before it opens a listener, let alone reaches a database.
@@ -60,17 +70,19 @@
       changed_when: true
       failed_when: false
 
+    # Misskey reports the missing file with `console.warn`, which lands on stderr, while
+    # the failing migration run lands on stdout. Both are looked at.
     - name: Assert the Misskey image cannot start without the role's configuration
       ansible.builtin.assert:
         # 0 would mean it ran to completion, 124 that `timeout` had to stop a container
         # which was happily running. Either would make everything below unattributable.
         that:
           - misskey_stock_control.rc not in [0, 124]
-          - "'YAML file not found' in misskey_stock_control.stdout"
+          - "'YAML file not found' in (misskey_stock_control.stdout ~ misskey_stock_control.stderr)"
         fail_msg: >-
           The unconfigured Misskey image exited with {{ misskey_stock_control.rc }},
           so nothing below can be credited to the role:
-          {{ misskey_stock_control.stdout | default('') | truncate(400) }}
+          {{ (misskey_stock_control.stdout ~ misskey_stock_control.stderr) | default('') | truncate(400) }}
         success_msg: >-
           The unconfigured Misskey image dies on startup with "YAML file not found"
           (rc={{ misskey_stock_control.rc }}), so a Misskey that serves anything at all
@@ -95,16 +107,26 @@
       changed_when: true
       failed_when: false
 
+    # Both controls are expected to die on their own. If one ever does not, it must not
+    # be left running against the same Postgres and Valkey for the rest of the play.
+    - name: Remove the Misskey control containers again
+      ansible.builtin.command:
+        cmd: >-
+          docker rm -f {{ misskey_verify_stock_container }}
+          {{ misskey_verify_uid_container }}
+      changed_when: true
+      failed_when: false
+
     - name: Assert the compiled-configuration bind-mount is what makes the role's uid work
       ansible.builtin.assert:
         that:
           - misskey_uid_control.rc not in [0, 124]
-          - "'/misskey/built/.config.json' in misskey_uid_control.stdout"
-          - "'EACCES' in misskey_uid_control.stdout"
+          - "'/misskey/built/.config.json' in (misskey_uid_control.stdout ~ misskey_uid_control.stderr)"
+          - "'EACCES' in (misskey_uid_control.stdout ~ misskey_uid_control.stderr)"
         fail_msg: >-
           Misskey running as {{ misskey_uid }}:{{ misskey_gid }} did not fail on
           /misskey/built/.config.json (rc={{ misskey_uid_control.rc }}):
-          {{ misskey_uid_control.stdout | default('') | truncate(400) }}.
+          {{ (misskey_uid_control.stdout ~ misskey_uid_control.stderr) | default('') | truncate(400) }}.
           Either the mount of `misskey_compiled_config_path` is no longer what makes
           this role work, or upstream has made that path writable and the workaround
           can be retired.
@@ -249,7 +271,7 @@
         method: POST
         body_format: json
         body: {}
-        status_code: [401]
+        status_code: [200, 401]
       register: misskey_admin_anonymous
 
     - name: Ask Misskey for its moderation settings with a token that was never issued
@@ -259,13 +281,15 @@
         body_format: json
         body:
           i: deadbeefdeadbeefdeadbeefdeadbeef
-        status_code: [401]
+        status_code: [200, 401]
       register: misskey_admin_forged
 
     - name: Assert Misskey turns away everyone who cannot prove who they are
       ansible.builtin.assert:
         that:
+          - misskey_admin_anonymous.status == 401
           - misskey_admin_anonymous.json.error.code == 'CREDENTIAL_REQUIRED'
+          - misskey_admin_forged.status == 401
           - misskey_admin_forged.json.error.code == 'AUTHENTICATION_FAILED'
         fail_msg: >-
           Misskey let something through: anonymous
@@ -302,14 +326,15 @@
         body:
           username: "{{ misskey_molecule_admin_username }}second"
           password: "{{ misskey_molecule_admin_password }}"
-        status_code: [400, 401, 403]
+        status_code: [200, 400, 401, 403]
       register: misskey_admin_second
 
     - name: Assert the unauthenticated setup path closes after the first account
       ansible.builtin.assert:
         that:
           - misskey_admin_created.json.isAdmin
-          - misskey_admin_second.json.error.code == 'ACCESS_DENIED'
+          - misskey_admin_second.status != 200
+          - misskey_admin_second.json.error.code | default('') == 'ACCESS_DENIED'
         fail_msg: >-
           Misskey created {{ misskey_molecule_admin_username }} with
           isAdmin={{ misskey_admin_created.json.isAdmin | default('unknown') }}, and
@@ -328,9 +353,11 @@
         body:
           username: "{{ misskey_molecule_admin_username }}"
           password: "not-{{ misskey_molecule_admin_password }}"
-        status_code: [403]
+        status_code: [200, 403]
       register: misskey_bad_signin
 
+    # Misskey rate-limits sign-in attempts per account, and the refused attempt just
+    # above counts towards that budget, so a 429 here is expected rather than a failure.
     - name: Sign in to Misskey as the administrator
       ansible.builtin.uri:
         url: "{{ misskey_verify_url }}/api/signin-flow"
@@ -339,13 +366,17 @@
         body:
           username: "{{ misskey_molecule_admin_username }}"
           password: "{{ misskey_molecule_admin_password }}"
-        status_code: [200]
+        status_code: [200, 429]
       register: misskey_signin
+      until: misskey_signin.status == 200
+      retries: 24
+      delay: 5
 
     - name: Assert Misskey issued a token only for the right password
       ansible.builtin.assert:
         that:
           - misskey_bad_signin.status == 403
+          - misskey_signin.status == 200
           - misskey_signin.json.finished | default(false)
           - (misskey_signin.json.i | default('')) | length > 8
         fail_msg: >-
@@ -393,7 +424,7 @@
         body:
           i: "{{ misskey_signin.json.i }}"
           noteId: "{{ misskey_molecule_absent_note_id }}"
-        status_code: [400]
+        status_code: [200, 400]
       register: misskey_absent_note
 
     - name: Assert Misskey stored and returned what it was given
@@ -402,7 +433,8 @@
           - misskey_read_note.json.id == misskey_created_note.json.createdNote.id
           - misskey_read_note.json.text == misskey_molecule_note_text
           - misskey_read_note.json.user.username == misskey_molecule_admin_username
-          - misskey_absent_note.json.error.code == 'NO_SUCH_NOTE'
+          - misskey_absent_note.status == 400
+          - misskey_absent_note.json.error.code | default('') == 'NO_SUCH_NOTE'
         fail_msg: >-
           The round trip through Misskey's API did not come back intact:
           {{ misskey_read_note.json | string | truncate(400) }}
