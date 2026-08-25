@@ -130,9 +130,15 @@ redis:
   host: "{{ misskey_redis_hostname }}"
   port: {{ misskey_redis_port }}
   #family: 0  # 0=Both, 4=IPv4, 6=IPv6
-  pass: {{ misskey_redis_password }}
-  prefix: {{ misskey_redis_prefix }}
-  db: {{ misskey_redis_database }}
+{#- These three are emitted as JSON scalars rather than bare, so that a password or a
+    prefix containing YAML-significant characters (` #`, `: `, a leading `*`/`&`/`@`, or
+    a value that reads as a number or as `yes`/`no`) survives the round-trip through
+    `from_yaml`/`to_nice_yaml` that `misskey_configuration` performs. Each keeps its
+    "unset" meaning of `null` when the variable is empty, which is what Misskey reads as
+    "no password", "use the host name as the key prefix" and "database 0". #}
+  pass: {{ misskey_redis_password | to_json if misskey_redis_password | string | length > 0 else 'null' }}
+  prefix: {{ misskey_redis_prefix | to_json if misskey_redis_prefix | string | length > 0 else 'null' }}
+  db: {{ misskey_redis_database | int if misskey_redis_database | string | length > 0 else 'null' }}
 
 #redisForPubsub:
 #  host: redis
@@ -191,11 +197,11 @@ fulltextSearch:
 # (include notes from remote).
 {% if misskey_config_fulltext_search_provider == 'meilisearch' %}
 meilisearch:
-  host: '{{ misskey_config_meilisearch_host }}'
+  host: {{ misskey_config_meilisearch_host | to_json }}
   port: {{ misskey_config_meilisearch_port }}
-  apiKey: '{{ misskey_config_meilisearch_apikey }}'
+  apiKey: {{ misskey_config_meilisearch_apikey | to_json }}
   ssl: {{ misskey_config_meilisearch_ssl | to_json }}
-  index: '{{ misskey_config_meilisearch_index }}'
+  index: {{ misskey_config_meilisearch_index | to_json }}
   scope: {{ misskey_config_meilisearch_scope }}
 {% endif %}
 #   ┌───────────────┐
