@@ -171,9 +171,10 @@
           Misskey running as {{ misskey_uid }}:{{ misskey_gid }} did not fail on
           /misskey/built/.config.json (rc={{ misskey_uid_control.rc }}):
           {{ (misskey_uid_control.stdout ~ misskey_uid_control.stderr) | default('') | truncate(400) }}.
-          Either the mount of `misskey_compiled_config_path` is no longer what makes
-          this role work, or upstream has made that path writable and the workaround
-          can be retired.
+          Either upstream has made that path writable and the workaround can be
+          retired, or the image has stopped being runnable as this uid for some other
+          reason - Misskey 2026.7.0, for instance, ships /misskey itself as mode 0700
+          owned by uid 991, so nothing the role mounts can help.
         success_msg: >-
           Without the bind-mount of `misskey_compiled_config_path`, Misskey running as
           {{ misskey_uid }}:{{ misskey_gid }} dies with EACCES on
