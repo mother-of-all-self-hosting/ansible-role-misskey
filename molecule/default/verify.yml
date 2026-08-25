@@ -1,0 +1,551 @@
+# SPDX-FileCopyrightText: 2026 Slavi Pantaleev
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Verify Misskey
+  hosts: all
+  become: true
+  gather_facts: false
+
+  vars:
+    misskey_verify_url: "http://127.0.0.1:{{ misskey_container_http_port }}"
+
+    # The names carry both the role and the scenario, like the platform does, so a
+    # leftover container can never be mistaken for another scenario's.
+    misskey_verify_stock_container: "{{ inventory_hostname }}-stock-control"
+    misskey_verify_uid_container: "{{ inventory_hostname }}-uid-control"
+
+    misskey_verify_psql: >-
+      docker exec {{ misskey_molecule_postgres_container }}
+      psql -U {{ misskey_molecule_postgres_superuser }} -d {{ misskey_database_name }} -tAc
+
+    misskey_verify_valkey: >-
+      docker exec {{ misskey_molecule_valkey_container }} valkey-cli
+
+  tasks:
+    # Role defaults are not in scope in a verify play, but the version Renovate bumps
+    # lives in them and is what the running container is checked against below. Only
+    # leaf literals may be read out of this - anything Jinja-derived would be resolved
+    # against an empty namespace.
+    - name: Load the Misskey role defaults
+      ansible.builtin.include_vars:
+        file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
+        name: misskey_defaults
+
+    - name: Read the Misskey container the role created
+      ansible.builtin.command:
+        cmd: "docker inspect {{ misskey_molecule_container }}"
+      register: misskey_container_raw
+      changed_when: false
+
+    - name: Make sense of the Misskey container
+      ansible.builtin.set_fact:
+        misskey_container: "{{ (misskey_container_raw.stdout | from_json)[0] }}"
+
+    # ------------------------------------------------------------------
+    # The negative controls: the same image, without the role's doing
+    # ------------------------------------------------------------------
+
+    # Nothing asserted below is evidence about the role unless the stock image cannot
+    # produce it unaided. It cannot: with no configuration file to compile, Misskey
+    # aborts before it opens a listener, let alone reaches a database.
+    - name: Run the Misskey image with none of the role's configuration
+      ansible.builtin.command:
+        cmd: >-
+          timeout 180
+          docker run --rm --name {{ misskey_verify_stock_container }}
+          {{ misskey_container.Config.Image }}
+      register: misskey_stock_control
+      changed_when: true
+      failed_when: false
+
+    - name: Assert the Misskey image cannot start without the role's configuration
+      ansible.builtin.assert:
+        # 0 would mean it ran to completion, 124 that `timeout` had to stop a container
+        # which was happily running. Either would make everything below unattributable.
+        that:
+          - misskey_stock_control.rc not in [0, 124]
+          - "'YAML file not found' in misskey_stock_control.stdout"
+        fail_msg: >-
+          The unconfigured Misskey image exited with {{ misskey_stock_control.rc }},
+          so nothing below can be credited to the role:
+          {{ misskey_stock_control.stdout | default('') | truncate(400) }}
+        success_msg: >-
+          The unconfigured Misskey image dies on startup with "YAML file not found"
+          (rc={{ misskey_stock_control.rc }}), so a Misskey that serves anything at all
+          is the role's doing
+
+    # The sharper control. This run gets the role's rendered configuration and the same
+    # image, and differs in exactly one respect: it does not get the bind-mount of
+    # `misskey_compiled_config_path`. Misskey compiles default.yml into
+    # /misskey/built/.config.json, a path owned by the image's own uid 991 and writable
+    # by nobody else, so without that mount a container running as `misskey_uid` dies
+    # with EACCES. That is the workaround this role carries; if this control ever stops
+    # failing, upstream has fixed the image and the mount can be dropped.
+    - name: Run the Misskey image as the role's uid but without the compiled-config mount
+      ansible.builtin.command:
+        cmd: >-
+          timeout 180
+          docker run --rm --name {{ misskey_verify_uid_container }}
+          --user {{ misskey_uid }}:{{ misskey_gid }}
+          {% for mount in misskey_container.Mounts | rejectattr('Destination', 'equalto', '/misskey/built/.config.json') %}--mount type=bind,src={{ mount.Source }},dst={{ mount.Destination }}{{ ',readonly' if not mount.RW else '' }} {% endfor %}
+          {{ misskey_container.Config.Image }}
+      register: misskey_uid_control
+      changed_when: true
+      failed_when: false
+
+    - name: Assert the compiled-configuration bind-mount is what makes the role's uid work
+      ansible.builtin.assert:
+        that:
+          - misskey_uid_control.rc not in [0, 124]
+          - "'/misskey/built/.config.json' in misskey_uid_control.stdout"
+          - "'EACCES' in misskey_uid_control.stdout"
+        fail_msg: >-
+          Misskey running as {{ misskey_uid }}:{{ misskey_gid }} did not fail on
+          /misskey/built/.config.json (rc={{ misskey_uid_control.rc }}):
+          {{ misskey_uid_control.stdout | default('') | truncate(400) }}.
+          Either the mount of `misskey_compiled_config_path` is no longer what makes
+          this role work, or upstream has made that path writable and the workaround
+          can be retired.
+        success_msg: >-
+          Without the bind-mount of `misskey_compiled_config_path`, Misskey running as
+          {{ misskey_uid }}:{{ misskey_gid }} dies with EACCES on
+          /misskey/built/.config.json (rc={{ misskey_uid_control.rc }}), so the mount
+          the role adds is load-bearing
+
+    # ------------------------------------------------------------------
+    # The unit is up and Misskey itself answers
+    # ------------------------------------------------------------------
+
+    - name: Wait for the Misskey systemd service to become active (up to 180s)
+      ansible.builtin.systemd_service:
+        name: "{{ misskey_molecule_container }}.service"
+      register: misskey_service
+      until: misskey_service.status.ActiveState == 'active'
+      retries: 36
+      delay: 5
+
+    - name: Assert the Misskey systemd service is active
+      ansible.builtin.assert:
+        that: misskey_service.status.ActiveState == 'active'
+        fail_msg: "{{ misskey_molecule_container }}.service is not active ({{ misskey_service.status.ActiveState }})"
+        success_msg: "{{ misskey_molecule_container }}.service is active"
+
+    - name: Retrieve the Misskey service log for debugging
+      when: misskey_debug_service_enabled | bool
+      ansible.builtin.command:
+        cmd: "journalctl -xeu {{ misskey_molecule_container }}.service"
+      changed_when: false
+
+    # `active` only says the docker client is running. /api/meta is answered by Misskey
+    # itself, and only after it has run its migrations against Postgres, connected to
+    # Redis and opened its listener, so this is where the service becomes truly ready.
+    - name: Wait for Misskey to answer /api/meta (up to 10m)
+      ansible.builtin.uri:
+        url: "{{ misskey_verify_url }}/api/meta"
+        method: POST
+        body_format: json
+        body: {}
+        status_code: [200, 404, 500, 502, 503]
+      register: misskey_meta
+      until: misskey_meta.status == 200
+      retries: 120
+      delay: 5
+
+    # ------------------------------------------------------------------
+    # The running process is the version this role pins
+    # ------------------------------------------------------------------
+
+    - name: Read Misskey's own package manifest out of the running container
+      ansible.builtin.command:
+        cmd: "docker exec {{ misskey_molecule_container }} cat /misskey/package.json"
+      register: misskey_package_json
+      changed_when: false
+
+    # Four independent surfaces for the same number: what the API reports, what the
+    # application's own manifest says, the tag the role asked Docker for, and the label
+    # the image was built with. Tying all of them to the leaf variable Renovate edits is
+    # what makes a version bump something this scenario can actually fail on.
+    - name: Assert the running Misskey is the version this role installs
+      ansible.builtin.assert:
+        that:
+          - misskey_meta.json.version == misskey_defaults.misskey_version
+          - (misskey_package_json.stdout | from_json).version == misskey_defaults.misskey_version
+          - (misskey_container.Config.Image | split(':') | last) == misskey_defaults.misskey_version
+          - misskey_container.Config.Labels['org.opencontainers.image.version'] == misskey_defaults.misskey_version
+        fail_msg: >-
+          The running Misskey reports {{ misskey_meta.json.version }} (manifest
+          {{ (misskey_package_json.stdout | from_json).version }}, image label
+          {{ misskey_container.Config.Labels['org.opencontainers.image.version'] | default('none') }})
+          out of image {{ misskey_container.Config.Image }}, but `misskey_version` pins
+          {{ misskey_defaults.misskey_version }}
+        success_msg: >-
+          The API, the package manifest, the image tag and the OCI label all say
+          {{ misskey_defaults.misskey_version }}, which is what `misskey_version` pins
+
+    # ------------------------------------------------------------------
+    # Configuration reaches the process, not just the files on disk
+    # ------------------------------------------------------------------
+
+    # Misskey learns its own address from `url:` in the rendered default.yml and from
+    # nowhere else, and it hands the value straight back as `uri`. The port is the same
+    # story: it is not Misskey's own default of 3000, so every answer above already
+    # depended on the configuration file having arrived.
+    - name: Assert Misskey is serving the address and port the role configured
+      ansible.builtin.assert:
+        that:
+          - misskey_meta.json.uri == (misskey_scheme ~ '://' ~ misskey_hostname)
+          - misskey_container_http_port != 3000
+        fail_msg: >-
+          Misskey reports its own address as {{ misskey_meta.json.uri }}, not
+          {{ misskey_scheme }}://{{ misskey_hostname }}
+        success_msg: >-
+          Misskey reports itself as {{ misskey_meta.json.uri }} on port
+          {{ misskey_container_http_port }} rather than its own default of 3000,
+          because the role's default.yml reached it
+
+    - name: Assert the Misskey container was handed the environment the role rendered
+      ansible.builtin.assert:
+        that: ('TZ=' ~ misskey_environment_variables_tz) in misskey_container.Config.Env
+        fail_msg: >-
+          The container's environment does not carry
+          TZ={{ misskey_environment_variables_tz }}:
+          {{ misskey_container.Config.Env | select('search', '^TZ=') | list }}
+        success_msg: >-
+          templates/env.j2 reached the container as
+          TZ={{ misskey_environment_variables_tz }}
+
+    - name: Read the additional volume from inside the Misskey container
+      ansible.builtin.command:
+        cmd: >-
+          docker exec {{ misskey_molecule_container }}
+          cat {{ misskey_molecule_extra_volume_container_path }}/marker.txt
+      register: misskey_extra_volume
+      changed_when: false
+      failed_when: false
+
+    # `*_container_additional_volumes` has been found inert in other roles of this
+    # fleet, so it is exercised rather than trusted.
+    - name: Assert misskey_container_additional_volumes_custom reached the container
+      ansible.builtin.assert:
+        that: (misskey_extra_volume.stdout | trim) == misskey_molecule_extra_volume_marker
+        fail_msg: >-
+          {{ misskey_molecule_extra_volume_container_path }}/marker.txt inside the
+          container reads "{{ misskey_extra_volume.stdout | trim }}"
+          ({{ misskey_extra_volume.stderr | default('') | trim }}), so
+          `misskey_container_additional_volumes_custom` did not reach it
+        success_msg: >-
+          The additional volume is mounted inside the container and carries
+          "{{ misskey_extra_volume.stdout | trim }}"
+
+    # ------------------------------------------------------------------
+    # Misskey's own setup path, and the credential checks around it
+    # ------------------------------------------------------------------
+
+    - name: Ask Misskey for its moderation settings without credentials
+      ansible.builtin.uri:
+        url: "{{ misskey_verify_url }}/api/admin/meta"
+        method: POST
+        body_format: json
+        body: {}
+        status_code: [401]
+      register: misskey_admin_anonymous
+
+    - name: Ask Misskey for its moderation settings with a token that was never issued
+      ansible.builtin.uri:
+        url: "{{ misskey_verify_url }}/api/admin/meta"
+        method: POST
+        body_format: json
+        body:
+          i: deadbeefdeadbeefdeadbeefdeadbeef
+        status_code: [401]
+      register: misskey_admin_forged
+
+    - name: Assert Misskey turns away everyone who cannot prove who they are
+      ansible.builtin.assert:
+        that:
+          - misskey_admin_anonymous.json.error.code == 'CREDENTIAL_REQUIRED'
+          - misskey_admin_forged.json.error.code == 'AUTHENTICATION_FAILED'
+        fail_msg: >-
+          Misskey let something through: anonymous
+          {{ misskey_admin_anonymous.json.error.code | default(misskey_admin_anonymous.status) }},
+          forged token
+          {{ misskey_admin_forged.json.error.code | default(misskey_admin_forged.status) }}
+        success_msg: >-
+          Misskey refuses the moderation API to anonymous callers
+          (CREDENTIAL_REQUIRED) and to forged tokens (AUTHENTICATION_FAILED)
+
+    # This is Misskey's own bootstrap path: on an instance with no accounts,
+    # /api/admin/accounts/create takes no credentials at all, and the set up wizard in
+    # the browser is a page that calls it. Nothing about it is specific to Molecule -
+    # see docs/configuring-misskey.md for why an operator should run it promptly.
+    - name: Create the Misskey administrator through Misskey's setup path
+      ansible.builtin.uri:
+        url: "{{ misskey_verify_url }}/api/admin/accounts/create"
+        method: POST
+        body_format: json
+        body:
+          username: "{{ misskey_molecule_admin_username }}"
+          password: "{{ misskey_molecule_admin_password }}"
+        status_code: [200]
+      register: misskey_admin_created
+
+    # The same anonymous call again. It has to be refused now, or the first one was not
+    # a bootstrap window that closes but an open door - which would be a finding about
+    # this version of Misskey worth stopping for.
+    - name: Try to create a second Misskey administrator without credentials
+      ansible.builtin.uri:
+        url: "{{ misskey_verify_url }}/api/admin/accounts/create"
+        method: POST
+        body_format: json
+        body:
+          username: "{{ misskey_molecule_admin_username }}second"
+          password: "{{ misskey_molecule_admin_password }}"
+        status_code: [400, 401, 403]
+      register: misskey_admin_second
+
+    - name: Assert the unauthenticated setup path closes after the first account
+      ansible.builtin.assert:
+        that:
+          - misskey_admin_created.json.isAdmin
+          - misskey_admin_second.json.error.code == 'ACCESS_DENIED'
+        fail_msg: >-
+          Misskey created {{ misskey_molecule_admin_username }} with
+          isAdmin={{ misskey_admin_created.json.isAdmin | default('unknown') }}, and
+          answered a second anonymous account creation with
+          {{ misskey_admin_second.json.error.code | default(misskey_admin_second.status) }}
+          rather than ACCESS_DENIED
+        success_msg: >-
+          Misskey made {{ misskey_molecule_admin_username }} an administrator and then
+          refused the next anonymous account creation with ACCESS_DENIED
+
+    - name: Sign in to Misskey with the wrong password
+      ansible.builtin.uri:
+        url: "{{ misskey_verify_url }}/api/signin-flow"
+        method: POST
+        body_format: json
+        body:
+          username: "{{ misskey_molecule_admin_username }}"
+          password: "not-{{ misskey_molecule_admin_password }}"
+        status_code: [403]
+      register: misskey_bad_signin
+
+    - name: Sign in to Misskey as the administrator
+      ansible.builtin.uri:
+        url: "{{ misskey_verify_url }}/api/signin-flow"
+        method: POST
+        body_format: json
+        body:
+          username: "{{ misskey_molecule_admin_username }}"
+          password: "{{ misskey_molecule_admin_password }}"
+        status_code: [200]
+      register: misskey_signin
+
+    - name: Assert Misskey issued a token only for the right password
+      ansible.builtin.assert:
+        that:
+          - misskey_bad_signin.status == 403
+          - misskey_signin.json.finished | default(false)
+          - (misskey_signin.json.i | default('')) | length > 8
+        fail_msg: >-
+          Signing in as {{ misskey_molecule_admin_username }} produced
+          {{ misskey_signin.json | string | truncate(200) }}
+          (wrong password answered {{ misskey_bad_signin.status }})
+        success_msg: >-
+          Misskey refuses the wrong password with 403 and issues a token for the right
+          one
+
+    # ------------------------------------------------------------------
+    # A round trip through Misskey's API, cross-checked in both back-ends
+    # ------------------------------------------------------------------
+
+    - name: Post a note as the Misskey administrator
+      ansible.builtin.uri:
+        url: "{{ misskey_verify_url }}/api/notes/create"
+        method: POST
+        body_format: json
+        body:
+          i: "{{ misskey_signin.json.i }}"
+          text: "{{ misskey_molecule_note_text }}"
+          visibility: public
+        status_code: [200]
+      register: misskey_created_note
+
+    - name: Read the note back out of Misskey
+      ansible.builtin.uri:
+        url: "{{ misskey_verify_url }}/api/notes/show"
+        method: POST
+        body_format: json
+        body:
+          i: "{{ misskey_signin.json.i }}"
+          noteId: "{{ misskey_created_note.json.createdNote.id }}"
+        status_code: [200]
+      register: misskey_read_note
+
+    # The same lookup for a note nobody ever created. Without it, a read-back that
+    # ignored its argument and returned whatever it had would look like a working one.
+    - name: Ask Misskey for a note that was never created
+      ansible.builtin.uri:
+        url: "{{ misskey_verify_url }}/api/notes/show"
+        method: POST
+        body_format: json
+        body:
+          i: "{{ misskey_signin.json.i }}"
+          noteId: "{{ misskey_molecule_absent_note_id }}"
+        status_code: [400]
+      register: misskey_absent_note
+
+    - name: Assert Misskey stored and returned what it was given
+      ansible.builtin.assert:
+        that:
+          - misskey_read_note.json.id == misskey_created_note.json.createdNote.id
+          - misskey_read_note.json.text == misskey_molecule_note_text
+          - misskey_read_note.json.user.username == misskey_molecule_admin_username
+          - misskey_absent_note.json.error.code == 'NO_SUCH_NOTE'
+        fail_msg: >-
+          The round trip through Misskey's API did not come back intact:
+          {{ misskey_read_note.json | string | truncate(400) }}
+          (and {{ misskey_absent_note.json.error.code | default('a result') }} for a
+          note that was never created)
+        success_msg: >-
+          Misskey stored note {{ misskey_created_note.json.createdNote.id }}, returns it
+          for a lookup that names it, and answers NO_SUCH_NOTE for one that does not
+
+    # Misskey's own API could be answering out of anything. This is the check that says
+    # the data landed in the Postgres the role wired up, in the database
+    # `misskey_database_name` names - which Misskey would never have found on its own.
+    - name: Read the note back out of Postgres
+      ansible.builtin.command:
+        cmd: >-
+          {{ misskey_verify_psql }}
+          "select n.text || '|' || u.username || '|' || n.visibility
+           from note n join \"user\" u on u.id = n.\"userId\"
+           where n.id = '{{ misskey_created_note.json.createdNote.id }}'"
+      register: misskey_postgres_note
+      changed_when: false
+
+    # Misskey's container command is `pnpm run migrateandstart`, so a populated
+    # `migrations` table is the evidence that the startup migrations ran against this
+    # database rather than against something the image found for itself.
+    - name: Count the migrations Misskey ran in Postgres
+      ansible.builtin.command:
+        cmd: '{{ misskey_verify_psql }} "select count(*) from migrations"'
+      register: misskey_postgres_migrations
+      changed_when: false
+
+    - name: Assert Misskey's data is in the Postgres database the role named
+      ansible.builtin.assert:
+        that:
+          - (misskey_postgres_migrations.stdout | trim | int) > 300
+          - >-
+            (misskey_postgres_note.stdout | trim) ==
+            (misskey_molecule_note_text ~ '|' ~ misskey_molecule_admin_username ~ '|public')
+        fail_msg: >-
+          Postgres does not hold what Misskey claims to have stored in
+          {{ misskey_database_name }}: migrations
+          {{ misskey_postgres_migrations.stdout | trim }},
+          row "{{ misskey_postgres_note.stdout | trim }}"
+        success_msg: >-
+          The {{ misskey_database_name }} database carries
+          {{ misskey_postgres_migrations.stdout | trim }} applied migrations and the
+          note row itself ({{ misskey_postgres_note.stdout | trim }})
+
+    # A scenario that names a data-store is no proof the application ever used it.
+    # Misskey's timeline fan-out is asynchronous, hence the retries.
+    - name: Look for the note in Misskey's Valkey timeline
+      ansible.builtin.command:
+        cmd: >-
+          {{ misskey_verify_valkey }} -n {{ misskey_redis_database }}
+          LRANGE {{ misskey_redis_prefix }}:list:localTimeline 0 -1
+      register: misskey_valkey_timeline
+      changed_when: false
+      failed_when: false
+      until: misskey_created_note.json.createdNote.id in (misskey_valkey_timeline.stdout | default(''))
+      retries: 24
+      delay: 5
+
+    - name: Count the keys in the Valkey database Misskey was pointed at
+      ansible.builtin.command:
+        cmd: "{{ misskey_verify_valkey }} -n {{ misskey_redis_database }} DBSIZE"
+      register: misskey_valkey_dbsize
+      changed_when: false
+
+    # Misskey's own default is database 0. Finding it empty while the configured one is
+    # busy is what separates "the role pointed Misskey at this Valkey" from "Misskey
+    # found a Valkey".
+    - name: Count the keys in Valkey's default database
+      ansible.builtin.command:
+        cmd: "{{ misskey_verify_valkey }} -n 0 DBSIZE"
+      register: misskey_valkey_dbsize_default
+      changed_when: false
+
+    - name: Assert Misskey is really using the Valkey the role configured
+      ansible.builtin.assert:
+        that:
+          - misskey_created_note.json.createdNote.id in misskey_valkey_timeline.stdout
+          - (misskey_valkey_dbsize.stdout | trim | int) > 0
+          - (misskey_valkey_dbsize_default.stdout | trim | int) == 0
+        fail_msg: >-
+          Valkey database {{ misskey_redis_database }} holds
+          {{ misskey_valkey_dbsize.stdout | trim }} keys and its
+          {{ misskey_redis_prefix }}:list:localTimeline reads
+          "{{ misskey_valkey_timeline.stdout | default('') | trim | truncate(200) }}"
+          (database 0 holds {{ misskey_valkey_dbsize_default.stdout | trim }} keys), so
+          `misskey_redis_prefix` and `misskey_redis_database` did not reach Misskey
+        success_msg: >-
+          Valkey database {{ misskey_redis_database }} holds
+          {{ misskey_valkey_dbsize.stdout | trim }} keys under the
+          `{{ misskey_redis_prefix }}` prefix, including note
+          {{ misskey_created_note.json.createdNote.id }} on the local timeline, while
+          Valkey's default database 0 is empty
+
+    # ------------------------------------------------------------------
+    # Nothing was quietly restarting while all of that was being checked
+    # ------------------------------------------------------------------
+
+    # `Restart=always` means the unit reads `active` while it is crash-looping, and a
+    # loop is exactly what a Misskey that cannot write its compiled configuration, or
+    # cannot reach Postgres, settles into. The window starts here, with everything
+    # already answering, because restarts from before this point say nothing.
+    - name: Sample the Misskey restart counter
+      ansible.builtin.systemd_service:
+        name: "{{ misskey_molecule_container }}.service"
+      register: misskey_restarts_before
+
+    # Comfortably longer than the unit's `RestartSec=30`, so a crash loop has to tick at
+    # least once inside the window.
+    - name: Watch the Misskey service for 45 seconds
+      ansible.builtin.pause:
+        seconds: 45
+
+    - name: Sample the Misskey restart counter again
+      ansible.builtin.systemd_service:
+        name: "{{ misskey_molecule_container }}.service"
+      register: misskey_restarts_after
+
+    - name: Assert Misskey did not restart while it was up
+      ansible.builtin.assert:
+        that: misskey_restarts_after.status.NRestarts == misskey_restarts_before.status.NRestarts
+        fail_msg: >-
+          Misskey restarted while it was supposedly up
+          ({{ misskey_restarts_before.status.NRestarts }} to
+          {{ misskey_restarts_after.status.NRestarts }}), so `active` was hiding a crash
+          loop
+        success_msg: >-
+          Misskey did not restart over 45 seconds of watching (restarts so far:
+          {{ misskey_restarts_after.status.NRestarts }})
+
+    - name: Show the Misskey verification summary
+      ansible.builtin.debug:
+        msg:
+          - "systemd: {{ misskey_service.status.ActiveState }}, restarts {{ misskey_restarts_after.status.NRestarts }}"
+          - "unconfigured image: exited rc={{ misskey_stock_control.rc }}"
+          - "no compiled-config mount: exited rc={{ misskey_uid_control.rc }} (EACCES)"
+          - "version: {{ misskey_meta.json.version }} from {{ misskey_container.Config.Image }}"
+          - "address: {{ misskey_meta.json.uri }} on port {{ misskey_container_http_port }}"
+          - "refusals: anonymous {{ misskey_admin_anonymous.json.error.code }}, forged {{ misskey_admin_forged.json.error.code }}, wrong password {{ misskey_bad_signin.status }}"
+          - "setup path: created {{ misskey_molecule_admin_username }}, second attempt {{ misskey_admin_second.json.error.code }}"
+          - "round trip: note {{ misskey_created_note.json.createdNote.id }}, absent lookup {{ misskey_absent_note.json.error.code }}"
+          - "postgres ({{ misskey_database_name }}): {{ misskey_postgres_migrations.stdout | trim }} migrations, {{ misskey_postgres_note.stdout | trim }}"
+          - "valkey (db {{ misskey_redis_database }}): {{ misskey_valkey_dbsize.stdout | trim }} keys, db0 {{ misskey_valkey_dbsize_default.stdout | trim }} keys"

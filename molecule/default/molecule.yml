@@ -1,0 +1,158 @@
+# SPDX-FileCopyrightText: 2026 Slavi Pantaleev
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+dependency:
+  name: galaxy
+  options:
+    requirements-file: requirements.yml
+    force: true
+driver:
+  name: docker
+platforms:
+  - name: misskey-${MOLECULE_DISTRO:-ubuntu2604}-default
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2604}-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    # Also what gives the inner Docker a /dev/fuse to hand to fuse-overlayfs.
+    # See prepare.yml for why that storage driver is not the fleet's usual vfs.
+    privileged: true
+    pre_build_image: true
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      callback_result_format: yaml
+  inventory:
+    group_vars:
+      all:
+        # Helper variables
+        misskey_debug_service_enabled: false
+
+        # The container names the role and its back-ends derive from their
+        # identifiers. Role defaults are not in scope in a verify play, so the names are
+        # spelled out here.
+        misskey_molecule_container: misskey
+
+        # The Postgres coordinates the verification queries directly. Misskey's own
+        # database user is not a superuser, so the checks go in as the one
+        # ansible-role-postgres creates.
+        misskey_molecule_postgres_container: postgres
+        misskey_molecule_postgres_superuser: root
+        misskey_molecule_valkey_container: valkey
+
+        # The administrator the verification creates through Misskey's own setup path,
+        # and the note it then posts. Distinctive enough that finding the note in
+        # Postgres or its id in Valkey cannot be a coincidence.
+        misskey_molecule_admin_username: moleculeadmin
+        misskey_molecule_admin_password: molecule-admin-password-4f7ba2
+        misskey_molecule_note_text: molecule round trip note 8f31c2ad
+
+        # A syntactically valid aidx that nobody ever creates. Asking Misskey for it
+        # proves that the read-back below is a lookup which discriminates, rather than a
+        # call that returns whatever happens to exist.
+        misskey_molecule_absent_note_id: a0000000000000000
+
+        # An additional volume, so that `misskey_container_additional_volumes_custom`
+        # is shown to reach the container rather than assumed to.
+        misskey_molecule_extra_volume_host_path: /misskey-molecule-extra
+        misskey_molecule_extra_volume_container_path: /molecule-extra
+        misskey_molecule_extra_volume_marker: misskey-molecule-additional-volume-2c7f
+
+        # Variables for Misskey
+        #
+        # Deliberately not the image's own uid (991), which is the only uid that can
+        # write Misskey's compiled configuration into the image. The role bind-mounts
+        # `misskey_compiled_config_path` over that destination to make any uid work, and
+        # verify.yml checks that the workaround is still load-bearing.
+        misskey_uid: 1000
+        misskey_gid: 1000
+
+        misskey_scheme: http
+
+        # Misskey reports this back as `uri` from /api/meta, and nothing but the role's
+        # rendered default.yml can tell it what its own address is.
+        misskey_hostname: misskey-molecule.example.com
+
+        misskey_container_labels_traefik_enabled: false
+
+        # Deliberately not Misskey's own default of 3000. The port reaches the process
+        # only through `port:` in the rendered default.yml, so a Misskey answering here
+        # is evidence that the configuration file arrived.
+        misskey_container_http_port: 36455
+        misskey_container_http_host_bind_port: 127.0.0.1:36455
+
+        # Passed through templates/env.j2 into the container's environment.
+        misskey_environment_variables_tz: Pacific/Kiritimati
+
+        misskey_container_additional_volumes_custom:
+          - type: bind
+            src: "{{ misskey_molecule_extra_volume_host_path }}"
+            dst: "{{ misskey_molecule_extra_volume_container_path }}"
+            options: readonly
+
+        # Variables required for Misskey to connect to the Postgres database
+        misskey_database_hostname: "{{ postgres_identifier }}"
+        misskey_database_username: misskey_molecule_user
+        misskey_database_password: misskey-molecule-database-password
+        # Deliberately not the role's default of `misskey`, for the same reason as the
+        # port above: the verification looks for Misskey's schema in exactly this
+        # database, and only the rendered default.yml can point it there.
+        misskey_database_name: misskey_molecule
+
+        # Variables required for Misskey to connect to the Valkey data-store.
+        misskey_redis_hostname: "{{ valkey_identifier }}"
+        # Neither of these is a Misskey default (it prefixes with the host name and uses
+        # database 0), which is what lets verify.yml tell a Valkey that Misskey was
+        # configured to use from one it merely found.
+        misskey_redis_prefix: misskeymoleculeprefix
+        misskey_redis_database: 7
+
+        misskey_container_additional_networks_custom:
+          - "{{ postgres_container_network }}"
+          - "{{ valkey_container_network }}"
+        misskey_systemd_required_services_list_custom:
+          - "{{ postgres_identifier }}.service"
+          - "{{ valkey_identifier }}.service"
+
+        # Variables for Postgres
+        postgres_uid: 1000
+        postgres_gid: 1000
+        postgres_connection_password: postgres_password
+        postgres_managed_databases: |
+          {{
+            [{
+              'name': misskey_database_name,
+              'username': misskey_database_username,
+              'password': misskey_database_password,
+            }]
+          }}
+
+        # Variables for Valkey
+        valkey_uid: 1000
+        valkey_gid: 1000
+        valkey_arch: amd64
+  env:
+    # Workaround for https://github.com/ansible/molecule/issues/4391
+    ANSIBLE_ROLES_PATH: ${MOLECULE_PROJECT_DIRECTORY}/..:/.ansible/roles:/usr/share/ansible/roles:/etc/ansible/roles:~/.ansible/roles
+scenario:
+  # See: https://docs.ansible.com/projects/molecule/configuration/?h=test_sequence#scenario
+  test_sequence:
+    - dependency
+    - cleanup
+    - destroy
+    - syntax
+    - create
+    - prepare
+    - converge
+    # Disable idempotence test for now due to ansible-role-postgres
+    # - idempotence
+    - side_effect
+    - verify
+    - cleanup
+    - destroy
+verifier:
+  name: ansible

@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2023 Slavi Pantaleev
+SPDX-FileCopyrightText: 2023 - 2026 Slavi Pantaleev
 SPDX-FileCopyrightText: 2025, 2026 Suguru Hirahara
 
 SPDX-License-Identifier: AGPL-3.0-or-later
@@ -17,6 +17,10 @@ This role *implicitly* depends on:
 Check [`defaults/main.yml`](defaults/main.yml) for the full list of supported options. Refer to [this page](docs/configuring-misskey.md) for details about setting up the service with this role.
 
 💡 For an Ansible playbook which integrates this role and makes it easier to use, see the [Mother-of-All-Self-Hosting Ansible playbook](https://github.com/mother-of-all-self-hosting/mash-playbook).
+
+## Testing
+
+This role ships a [Molecule](https://docs.ansible.com/projects/molecule/) scenario which installs Misskey against a Postgres and a Valkey, drives Misskey's own API, and cross-checks the result in both back-ends. See [`molecule/README.md`](molecule/README.md) for what it verifies and how to run it.
 
 ## Development
 
