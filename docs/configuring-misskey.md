@@ -128,6 +128,28 @@ After running the command for installation, Misskey becomes available at the spe
 
 To get started, open the URL with a web browser, and follow the set up wizard.
 
+>[!WARNING]
+> **Create the administrator account immediately after the first start.**
+>
+> Until the instance has its first account, Misskey serves `POST /api/admin/accounts/create` to anyone who asks, with no credentials at all - that is how the set up wizard creates the administrator, and the wizard is just a web page calling that endpoint. Anybody who reaches your hostname before you do can therefore claim the instance and become its administrator (`isAdmin: true`), and this role publishes the hostname to the reverse-proxy as soon as it installs the service. Verified against Misskey `2026.6.0`: the very first anonymous call to that endpoint succeeds, and every later one is refused with `ACCESS_DENIED`.
+>
+> The window closes the moment the first account exists, so the practical advice is to run the wizard right away rather than at your leisure.
+>
+> If you cannot do that - the DNS record is not ready yet, or you are installing well ahead of using it - you can keep strangers out with [Basic HTTP authentication](#protecting-the-instance-with-basic-http-authentication) until you have claimed the account, and remove it afterwards.
+
+### Protecting the instance with Basic HTTP authentication
+
+To put an HTTP Basic authentication prompt in front of the whole instance, add the following configuration to your `vars.yml` file:
+
+```yaml
+misskey_container_labels_traefik_middleware_basic_auth_enabled: true
+misskey_container_labels_traefik_middleware_basic_auth_users: ""
+```
+
+`misskey_container_labels_traefik_middleware_basic_auth_users` takes htpasswd-style credentials, as described in [Traefik's documentation for the basicauth middleware](https://doc.traefik.io/traefik/reference/routing-configuration/http/middlewares/basicauth/).
+
+This is a blunt instrument: it also blocks federation and any client application, so it suits an instance that is not in use yet (see the warning above) rather than a running one.
+
 ### Enabling the email function
 
 **By default the mailer function is not enabled**, which is used for email address confirmation on sign-up and resetting passwords.
