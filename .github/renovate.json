@@ -7,6 +7,6 @@
     "`versioning=semver` on the annotation in defaults/main.yml is what keeps the noise out of that decision. Of the 985 tags misskey/misskey publishes, strict semver leaves 502 real releases: 432 are `-alpha.N`/`-beta.N`/`-rc.N` prereleases which are skipped as unstable, and 51 are not versions at all - `latest`, `develop`, and the floating `13`, `2023` ... `2026` and `2026.6` tags that move under your feet. Misskey's CalVer also means that a bump of the last component of `YYYY.M.P` is what semver calls a patch, and a new month is a minor."
   ],
   "extends": [
-    "github>mother-of-all-self-hosting/renovate-config#v1.0.0"
+    "github>mother-of-all-self-hosting/renovate-config#v1.1.0"
   ]
 }
