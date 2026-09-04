@@ -595,13 +595,13 @@
     - name: Show the Misskey verification summary
       ansible.builtin.debug:
         msg:
-          - "systemd: {{ misskey_service.status.ActiveState }}, restarts {{ misskey_restarts_after.status.NRestarts }}"
-          - "unconfigured image: exited rc={{ misskey_stock_control.rc }}"
-          - "no compiled-config mount: exited rc={{ misskey_uid_control.rc }} (EACCES)"
-          - "version: {{ misskey_meta.json.version }} from {{ misskey_container.Config.Image }}"
-          - "address: {{ misskey_meta.json.uri }} on port {{ misskey_container_http_port }}"
-          - "refusals: anonymous {{ misskey_admin_anonymous.json.error.code }}, forged {{ misskey_admin_forged.json.error.code }}, wrong password {{ misskey_bad_signin.status }}"
-          - "setup path: created {{ misskey_molecule_admin_username }}, second attempt {{ misskey_admin_second.json.error.code }}"
-          - "round trip: note {{ misskey_created_note.json.createdNote.id }}, absent lookup {{ misskey_absent_note.json.error.code }}"
-          - "postgres ({{ misskey_database_name }}): {{ misskey_postgres_migrations.stdout | trim }} migrations, {{ misskey_postgres_note.stdout | trim }}"
-          - "valkey (db {{ misskey_redis_database }}): {{ misskey_valkey_dbsize.stdout | trim }} keys, db0 {{ misskey_valkey_dbsize_default.stdout | trim }} keys"
+          - "Misskey systemd: {{ misskey_service.status.ActiveState }}, restarts {{ misskey_restarts_after.status.NRestarts }}"
+          - "Misskey version: {{ misskey_meta.json.version }} from {{ misskey_container.Config.Image }}"
+          - "Misskey unconfigured image: exited rc={{ misskey_stock_control.rc }}"
+          - "Misskey no compiled-config mount: exited rc={{ misskey_uid_control.rc }} (EACCES)"
+          - "Misskey address: {{ misskey_meta.json.uri }} on port {{ misskey_container_http_port }}"
+          - "Misskey refusals: anonymous {{ misskey_admin_anonymous.json.error.code }}, forged {{ misskey_admin_forged.json.error.code }}, wrong password {{ misskey_bad_signin.status }}"
+          - "Misskey setup path: created {{ misskey_molecule_admin_username }}, second attempt {{ misskey_admin_second.json.error.code }}"
+          - "Misskey round trip: note {{ misskey_created_note.json.createdNote.id }}, absent lookup {{ misskey_absent_note.json.error.code }}"
+          - "Misskey postgres ({{ misskey_database_name }}): {{ misskey_postgres_migrations.stdout | trim }} migrations, {{ misskey_postgres_note.stdout | trim }}"
+          - "Misskey valkey (db {{ misskey_redis_database }}): {{ misskey_valkey_dbsize.stdout | trim }} keys, db0 {{ misskey_valkey_dbsize_default.stdout | trim }} keys"
