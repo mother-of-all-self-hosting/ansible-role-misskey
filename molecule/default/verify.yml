@@ -82,7 +82,7 @@
           ({{ misskey_container_raw.stderr | default('') | trim }})
         success_msg: "The container {{ misskey_molecule_container }} exists"
 
-    - name: Make sense of the Misskey container
+    - name: Parse the Misskey container definition
       ansible.builtin.set_fact:
         misskey_container: "{{ (misskey_container_raw.stdout | from_json)[0] }}"
 
