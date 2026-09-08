@@ -59,7 +59,7 @@
     - name: Retrieve the Misskey systemd service log for debugging
       when: misskey_debug_service_enabled | bool
       ansible.builtin.command:
-        cmd: "journalctl -xeu {{ misskey_molecule_container }}.service"
+       cmd: "journalctl --no-pager --output=cat --unit={{ misskey_molecule_container }}.service"
       changed_when: false
 
     # The unit creates the container with `--rm`, so a Misskey that cannot start leaves
@@ -584,19 +584,19 @@
     - name: Sample the Misskey restart counter again
       ansible.builtin.systemd_service:
         name: "{{ misskey_molecule_container }}.service"
-      register: misskey_restarts_after
+      register: misskey_service_after
 
     - name: Assert Misskey did not restart while it was up
       ansible.builtin.assert:
-        that: misskey_restarts_after.status.NRestarts == misskey_restarts_before.status.NRestarts
+        that: misskey_service_after.status.NRestarts == misskey_restarts_before.status.NRestarts
         fail_msg: >-
           Misskey restarted while it was supposedly up
           ({{ misskey_restarts_before.status.NRestarts }} to
-          {{ misskey_restarts_after.status.NRestarts }}), so `active` was hiding a crash
+          {{ misskey_service_after.status.NRestarts }}), so `active` was hiding a crash
           loop
         success_msg: >-
           Misskey did not restart over 45 seconds of watching (restarts so far:
-          {{ misskey_restarts_after.status.NRestarts }})
+          {{ misskey_service_after.status.NRestarts }})
 
     - name: Show the Misskey verification summary
       ansible.builtin.debug:
