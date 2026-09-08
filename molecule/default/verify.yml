@@ -601,7 +601,7 @@
     - name: Show the Misskey verification summary
       ansible.builtin.debug:
         msg:
-          - "Misskey systemd: {{ misskey_service.status.ActiveState }}, restarts {{ misskey_restarts_after.status.NRestarts }}"
+          - "Misskey systemd: {{ misskey_service.status.ActiveState }}, {{ misskey_service_after.status.NRestarts }} restart(s)"
           - "Misskey version: {{ misskey_meta.json.version }} from {{ misskey_container.Config.Image }}"
           - "Misskey unconfigured image: exited rc={{ misskey_stock_control.rc }}"
           - "Misskey no compiled-config mount: exited rc={{ misskey_uid_control.rc }} (EACCES)"
