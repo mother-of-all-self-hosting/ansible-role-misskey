@@ -24,6 +24,8 @@
       docker exec {{ misskey_molecule_valkey_container }} valkey-cli
 
   tasks:
+    - name: Verify that Misskey works
+      block:
     # The role is not included in this playbook, so its defaults are not in
     # scope. Reading defaults/main.yml directly ties the version assertion
     # below.
@@ -611,3 +613,19 @@
           - "Misskey round trip: note {{ misskey_created_note.json.createdNote.id }}, absent lookup {{ misskey_absent_note.json.error.code }}"
           - "Misskey postgres ({{ misskey_database_name }}): {{ misskey_postgres_migrations.stdout | trim }} migrations, {{ misskey_postgres_note.stdout | trim }}"
           - "Misskey valkey (db {{ misskey_redis_database }}): {{ misskey_valkey_dbsize.stdout | trim }} keys, db0 {{ misskey_valkey_dbsize_default.stdout | trim }} keys"
+
+      rescue:
+        # Whatever went wrong, the reason is almost always in the systemd service log.
+        - name: Retrieve the Misskey systemd service log
+          ansible.builtin.command:
+            cmd: "journalctl --no-pager --output=cat --unit={{ misskey_molecule_container }}.service"
+          register: misskey_service_log
+          changed_when: false
+
+        - name: Show the Misskey systemd service log
+          ansible.builtin.debug:
+            var: misskey_service_log.stdout_lines
+
+        - name: Fail because verification did not pass
+          ansible.builtin.fail:
+            msg: "Misskey verification failed. The systemd service log is printed above."
