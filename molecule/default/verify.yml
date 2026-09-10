@@ -61,7 +61,7 @@
         - name: Retrieve the Misskey systemd service log for debugging
           when: misskey_debug_service_enabled | bool
           ansible.builtin.command:
-           cmd: journalctl --no-pager --output=cat --unit=misskey.service
+            cmd: journalctl --no-pager --output=cat --unit=misskey.service
           changed_when: false
 
         # The unit creates the container with `--rm`, so a Misskey that cannot start leaves
