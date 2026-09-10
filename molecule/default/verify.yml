@@ -17,11 +17,11 @@
     misskey_verify_uid_container: "{{ inventory_hostname }}-uid-control"
 
     misskey_verify_psql: >-
-      docker exec {{ misskey_molecule_postgres_container }}
-      psql -U {{ misskey_molecule_postgres_superuser }} -d {{ misskey_database_name }} -tAc
+      docker exec postgres
+      psql -U root -d {{ misskey_database_name }} -tAc
 
     misskey_verify_valkey: >-
-      docker exec {{ misskey_molecule_valkey_container }} valkey-cli
+      docker exec valkey valkey-cli
 
   tasks:
     - name: Verify that Misskey works
@@ -40,7 +40,7 @@
 
         - name: Wait for the Misskey systemd service to become active (up to 180s)
           ansible.builtin.systemd_service:
-            name: "{{ misskey_molecule_container }}.service"
+            name: misskey.service
           register: misskey_service
           until: misskey_service.status.ActiveState == 'active'
           retries: 36
@@ -55,13 +55,13 @@
         - name: Assert the Misskey systemd service is active
           ansible.builtin.assert:
             that: misskey_service.status.ActiveState == 'active'
-            fail_msg: "{{ misskey_molecule_container }}.service is not active ({{ misskey_service.status.ActiveState }})"
-            success_msg: "{{ misskey_molecule_container }}.service is active"
+            fail_msg: "misskey.service is not active ({{ misskey_service.status.ActiveState }})"
+            success_msg: "misskey.service is active"
 
         - name: Retrieve the Misskey systemd service log for debugging
           when: misskey_debug_service_enabled | bool
           ansible.builtin.command:
-           cmd: "journalctl --no-pager --output=cat --unit={{ misskey_molecule_container }}.service"
+           cmd: journalctl --no-pager --output=cat --unit=misskey.service
           changed_when: false
 
         # The unit creates the container with `--rm`, so a Misskey that cannot start leaves
@@ -72,7 +72,7 @@
         # becoming active and the container being created.
         - name: Wait for the Misskey container to exist (up to 120s)
           ansible.builtin.command:
-            cmd: "docker inspect --type container {{ misskey_molecule_container }}"
+            cmd: "docker inspect --type container misskey"
           register: misskey_container_raw
           changed_when: false
           failed_when: false
@@ -84,11 +84,11 @@
           ansible.builtin.assert:
             that: misskey_container_raw.rc == 0
             fail_msg: >-
-              No container named {{ misskey_molecule_container }} exists. The unit creates it
+              No container named misskey exists. The unit creates it
               with `--rm`, so this is what a Misskey that dies on startup looks like -
-              check `journalctl -u {{ misskey_molecule_container }}.service`.
+              check `journalctl -u misskey.service`.
               ({{ misskey_container_raw.stderr | default('') | trim }})
-            success_msg: "The container {{ misskey_molecule_container }} exists"
+            success_msg: "The container misskey exists"
 
         - name: Parse the Misskey container definition
           ansible.builtin.set_fact:
@@ -213,7 +213,7 @@
 
         - name: Read Misskey's own package manifest out of the running container
           ansible.builtin.command:
-            cmd: "docker exec {{ misskey_molecule_container }} cat /misskey/package.json"
+            cmd: "docker exec misskey cat /misskey/package.json"
           register: misskey_package_json
           changed_when: false
 
@@ -273,7 +273,7 @@
         - name: Read the additional volume from inside the Misskey container
           ansible.builtin.command:
             cmd: >-
-              docker exec {{ misskey_molecule_container }}
+              docker exec misskey
               cat {{ misskey_molecule_extra_volume_container_path }}/marker.txt
           register: misskey_extra_volume
           changed_when: false
@@ -574,7 +574,7 @@
         # already answering, because restarts from before this point say nothing.
         - name: Sample the Misskey restart counter
           ansible.builtin.systemd_service:
-            name: "{{ misskey_molecule_container }}.service"
+            name: misskey.service
           register: misskey_restarts_before
 
         # Comfortably longer than the unit's `RestartSec=30`, so a crash loop has to tick at
@@ -585,7 +585,7 @@
 
         - name: Sample the Misskey restart counter again
           ansible.builtin.systemd_service:
-            name: "{{ misskey_molecule_container }}.service"
+            name: "misskey.service"
           register: misskey_service_after
 
         - name: Assert Misskey did not restart while it was up
@@ -618,7 +618,7 @@
         # Whatever went wrong, the reason is almost always in the systemd service log.
         - name: Retrieve the Misskey systemd service log
           ansible.builtin.command:
-            cmd: "journalctl --no-pager --output=cat --unit={{ misskey_molecule_container }}.service"
+            cmd: "journalctl --no-pager --output=cat --unit=misskey.service"
           register: misskey_service_log
           changed_when: false
 

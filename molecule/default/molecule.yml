@@ -32,18 +32,6 @@ provisioner:
         # Helper variables
         misskey_debug_service_enabled: false
 
-        # The container names the role and its back-ends derive from their
-        # identifiers. Role defaults are not in scope in a verify play, so the names are
-        # spelled out here.
-        misskey_molecule_container: misskey
-
-        # The Postgres coordinates the verification queries directly. Misskey's own
-        # database user is not a superuser, so the checks go in as the one
-        # ansible-role-postgres creates.
-        misskey_molecule_postgres_container: postgres
-        misskey_molecule_postgres_superuser: root
-        misskey_molecule_valkey_container: valkey
-
         # The administrator the verification creates through Misskey's own setup path,
         # and the note it then posts. Distinctive enough that finding the note in
         # Postgres or its id in Valkey cannot be a coincidence.

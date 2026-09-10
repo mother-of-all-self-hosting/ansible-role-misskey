@@ -32,15 +32,15 @@
 
     - name: Ensure Postgres systemd service is started
       ansible.builtin.systemd_service:
-        name: "{{ misskey_molecule_postgres_container }}.service"
+        name: postgres.service
         state: started
 
     - name: Ensure Valkey systemd service is started
       ansible.builtin.systemd_service:
-        name: "{{ misskey_molecule_valkey_container }}.service"
+        name: valkey.service
         state: started
 
     - name: Ensure Misskey systemd service is started
       ansible.builtin.systemd_service:
-        name: "{{ misskey_molecule_container }}.service"
+        name: misskey.service
         state: started
