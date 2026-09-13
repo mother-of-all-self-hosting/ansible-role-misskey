@@ -31,6 +31,7 @@ provisioner:
       all:
         # Helper variables
         misskey_debug_service_enabled: false
+        misskey_restarts_check_enabled: true
 
         # The administrator the verification creates through Misskey's own setup path,
         # and the note it then posts. Distinctive enough that finding the note in
