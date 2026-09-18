@@ -110,7 +110,7 @@ Take a look at:
 
 - [`defaults/main.yml`](../defaults/main.yml) for some variables that you can customize via your `vars.yml` file. You can override settings (even those that don't have dedicated playbook variables) using the `misskey_configuration_extension_yaml` variable
 
-See its [configuration parameters](https://github.com/misskey-dev/misskey/blob/master/.config/docker_example.yml) for a complete list of Misskey's config options that you could put in `misskey_configuration_extension_yaml`.
+See its [configuration parameters](https://github.com/misskey-dev/misskey/blob/master/.config/docker_example.yml) for a complete list of Misskey's config options that you can put in `misskey_configuration_extension_yaml`.
 
 ## Installing
 
