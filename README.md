@@ -20,7 +20,7 @@ Check [`defaults/main.yml`](defaults/main.yml) for the full list of supported op
 
 ## Testing
 
-This role ships a [Molecule](https://docs.ansible.com/projects/molecule/) scenario which installs Misskey against a Postgres and a Valkey, drives Misskey's own API, and cross-checks the result in both back-ends. See [`molecule/README.md`](molecule/README.md) for what it verifies and how to run it.
+This role ships a [Molecule](https://docs.ansible.com/projects/molecule/) scenario which installs Misskey against a Postgres and a Valkey, drives Misskey's own API, and cross-checks the result in both back-ends. Refer to [`molecule/README.md`](molecule/README.md) for what it verifies and how to run it.
 
 ## Development
 

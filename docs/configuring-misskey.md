@@ -158,7 +158,7 @@ After logging in to the instance as the administrator user, you can manually ena
 
 ### Enabling note search
 
-**Note search function is disabled by default.** See [this comment](https://github.com/misskey-dev/misskey/issues/10399#issuecomment-1481429775) on the repository at GitHub for details about how to enable it.
+**Note search function is disabled by default.** Refer to [this comment](https://github.com/misskey-dev/misskey/issues/10399#issuecomment-1481429775) on the repository at GitHub for details about how to enable it.
 
 To make the function work, you might have to log out of the account and re-login to the instance.
 
