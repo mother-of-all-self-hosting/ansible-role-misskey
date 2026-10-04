@@ -66,7 +66,7 @@ The scenario deliberately runs Misskey on a port, a database name, a Redis key p
 
 Note that a Misskey with no accounts answers `GET /` with 200 all the same, which is why nothing here treats that as evidence.
 
-The scenario's `prepare.yml` installs `fuse-overlayfs` and points the inner Docker at it, instead of the `vfs` storage driver the rest of this fleet uses. The Misskey image is around 4.5 GB across 35 layers, and `vfs` — which copies the whole filesystem for every layer — unpacks it to 41 GB, which no CI runner has. `fuse-overlayfs` needs about 3.3 GB for the same image.
+Like the rest of this fleet, the scenario gives the inner Docker's image storage a volume of its own (`/var/lib/containerd` in `molecule.yml`), so that it can use overlay storage. That matters here: the Misskey image is around 4.5 GB across 35 layers, and `vfs` — the fallback, which copies the whole filesystem for every layer — unpacks it to 41 GB, which no CI runner has.
 
 ## Running
 
