@@ -18,11 +18,9 @@ Check [`defaults/main.yml`](defaults/main.yml) for the full list of supported op
 
 💡 For an Ansible playbook which integrates this role and makes it easier to use, see the [Mother-of-All-Self-Hosting Ansible playbook](https://github.com/mother-of-all-self-hosting/mash-playbook).
 
-## Testing
-
-This role ships a [Molecule](https://docs.ansible.com/projects/molecule/) scenario which installs Misskey against a Postgres and a Valkey, drives Misskey's own API, and cross-checks the result in both back-ends. Refer to [`molecule/README.md`](molecule/README.md) for what it verifies and how to run it.
-
 ## Development
+
+### pre-commit
 
 You can optionally install a Git pre-commit hook (via [mise](https://mise.jdx.dev/) + [prek](https://prek.j178.dev/)) that runs formatting and linting checks before each commit. See [`.pre-commit-config.yaml`](./.pre-commit-config.yaml) for which hooks are to be executed.
 
@@ -31,3 +29,15 @@ To install the hook, run the [`just`](https://github.com/casey/just) command bel
 ```sh
 just prek-install-git-pre-commit-hook
 ```
+
+### Molecule
+
+This role supports [Molecule](https://docs.ansible.com/projects/molecule/), an Ansible testing framework designed for developing and testing Ansible collections, playbooks, and roles.
+
+Refer to [this page](./molecule/README.md) for details about how to utilize it.
+
+### Releases
+
+Tags are created on the GitHub workflow by [`.github/workflows/autotag.yml`](.github/workflows/autotag.yml), which asks [`bin/compute-next-tag.sh`](bin/compute-next-tag.sh) what the commit on `main` should be released as. The answer comes from the version pinned in [`defaults/main.yml`](defaults/main.yml) and from the tags that already exist, so a commit that only touches documentation or CI is not released at all, and any change to the role itself is — without waiting for a dependency bump to carry it along.
+
+[`bin/test-compute-next-tag.sh`](bin/test-compute-next-tag.sh) exercises that script against throwaway repositories, and runs as a prek hook.
