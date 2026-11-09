@@ -90,8 +90,8 @@ provisioner:
 
         # Variables required for Misskey to connect to the Postgres database
         misskey_database_hostname: "{{ postgres_identifier }}"
-        misskey_database_username: misskey_molecule_user
-        misskey_database_password: misskey-molecule-database-password
+        misskey_database_username: /#@my_database_username?%
+        misskey_database_password: /#@my_database_password?%
         # Deliberately not the role's default of `misskey`, for the same reason as the
         # port above: the verification looks for Misskey's schema in exactly this
         # database, and only the rendered default.yml can point it there.
