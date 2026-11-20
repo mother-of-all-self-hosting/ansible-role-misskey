@@ -22,9 +22,6 @@
   with_items:
     - misskey_uid
     - misskey_gid
-    - misskey_hostname
-    - misskey_path_prefix
-    - misskey_container_network
     - misskey_database_hostname
     - misskey_database_password
     - misskey_redis_hostname
